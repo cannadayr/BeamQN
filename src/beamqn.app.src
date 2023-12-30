@@ -1,0 +1,14 @@
+{application, beamqn,
+ [{description, "An experiment in linking CBQN into the Erlang BEAM as a NIF."},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {applications,
+   [kernel,
+    stdlib
+   ]},
+  {env,[]},
+  {modules, []},
+
+  {licenses, ["Apache-2.0"]},
+  {links, []}
+ ]}.
