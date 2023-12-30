@@ -18,10 +18,19 @@ static ERL_NIF_TERM beamqn_make_atom(ErlNifEnv* env, const char* atom)
     return ret;
 }
 
+static void
+beamqn_free_bqnv(ErlNifEnv* env, void* ptr)
+{
+    BQNV* x = (BQNV*) ptr;
+    bqn_free(*x);
+    enif_free(x);
+}
+
+
 static int beamqn_init(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
 {
     ok_atom = beamqn_make_atom(env, "ok");
-    BEAMQN_BQNV = enif_open_resource_type(env, NULL, "BQNV", NULL, ERL_NIF_RT_CREATE|ERL_NIF_RT_TAKEOVER, NULL);
+    BEAMQN_BQNV = enif_open_resource_type(env, NULL, "BQNV", beamqn_free_bqnv, ERL_NIF_RT_CREATE|ERL_NIF_RT_TAKEOVER, NULL);
     bqn_init();
     return 0;
 }
