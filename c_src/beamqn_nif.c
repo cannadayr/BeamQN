@@ -1,4 +1,7 @@
+#include <stdlib.h>
+#include <stdio.h>
 #include <erl_nif.h>
+#include <bqnffi.h>
 
 static ERL_NIF_TERM
 mk_atom(ErlNifEnv* env, const char* atom)
@@ -15,11 +18,19 @@ mk_atom(ErlNifEnv* env, const char* atom)
 
 static ERL_NIF_TERM makeF64(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-    int x, ret;
-    if (!enif_get_int(env, argv[0], &x)) {
-	return enif_make_badarg(env);
+    ERL_NIF_TERM ret;
+    double x;
+    if (!enif_get_double(env, argv[0], &x)) {
+	    return enif_make_badarg(env);
     }
-    ret = mk_atom(env, "ok");
+
+    double res;
+    BQNV y;
+    y = bqn_makeF64(x+1);
+    res = bqn_readF64(y);
+
+    //ret = mk_atom(env, "ok");
+    ret = enif_make_tuple2(env, mk_atom(env, "ok"), enif_make_double(env, res));
     return ret;
 }
 
