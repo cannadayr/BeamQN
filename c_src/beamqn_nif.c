@@ -5,7 +5,7 @@
 
 ERL_NIF_TERM ok_atom;
 
-static ERL_NIF_TERM nif_make_atom(ErlNifEnv* env, const char* atom)
+static ERL_NIF_TERM beamqn_make_atom(ErlNifEnv* env, const char* atom)
 {
     ERL_NIF_TERM ret;
 
@@ -17,14 +17,14 @@ static ERL_NIF_TERM nif_make_atom(ErlNifEnv* env, const char* atom)
     return ret;
 }
 
-static int init(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
+static int beamqn_init(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
 {
-    ok_atom = nif_make_atom(env, "ok");
+    ok_atom = beamqn_make_atom(env, "ok");
     bqn_init();
     return 0;
 }
 
-static ERL_NIF_TERM nif_bqn_makeF64(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+static ERL_NIF_TERM beamqn_bqn_makeF64(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
     ERL_NIF_TERM ret;
     double x;
@@ -42,7 +42,7 @@ static ERL_NIF_TERM nif_bqn_makeF64(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 }
 
 static ErlNifFunc nif_funcs[] = {
-    {"makeF64", 1, nif_bqn_makeF64}
+    {"makeF64", 1, beamqn_bqn_makeF64}
 };
 
-ERL_NIF_INIT(beamqn, nif_funcs, init, NULL, NULL, NULL)
+ERL_NIF_INIT(beamqn, nif_funcs, &beamqn_init, NULL, NULL, NULL)
