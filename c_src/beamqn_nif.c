@@ -3,8 +3,9 @@
 #include <erl_nif.h>
 #include <bqnffi.h>
 
-static ERL_NIF_TERM
-mk_atom(ErlNifEnv* env, const char* atom)
+ERL_NIF_TERM ok_atom;
+
+static ERL_NIF_TERM nif_make_atom(ErlNifEnv* env, const char* atom)
 {
     ERL_NIF_TERM ret;
 
@@ -14,6 +15,12 @@ mk_atom(ErlNifEnv* env, const char* atom)
     }
 
     return ret;
+}
+
+static int init(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
+{
+    ok_atom = nif_make_atom(env, "ok");
+    return 0;
 }
 
 static ERL_NIF_TERM makeF64(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
@@ -29,8 +36,7 @@ static ERL_NIF_TERM makeF64(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     y = bqn_makeF64(x+1);
     res = bqn_readF64(y);
 
-    //ret = mk_atom(env, "ok");
-    ret = enif_make_tuple2(env, mk_atom(env, "ok"), enif_make_double(env, res));
+    ret = enif_make_tuple2(env, ok_atom, enif_make_double(env, res));
     return ret;
 }
 
@@ -38,4 +44,4 @@ static ErlNifFunc nif_funcs[] = {
     {"makeF64", 1, makeF64}
 };
 
-ERL_NIF_INIT(beamqn, nif_funcs, NULL, NULL, NULL, NULL)
+ERL_NIF_INIT(beamqn, nif_funcs, init, NULL, NULL, NULL)
