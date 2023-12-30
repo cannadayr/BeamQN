@@ -1,5 +1,5 @@
 -module(beamqn).
--export([makeF64/1]).
+-export([makeF64/1,readF64/1]).
 -on_load(init/0).
 
 -define(APPNAME, beamqn).
@@ -23,4 +23,6 @@ init() ->
     erlang:load_nif(SoName, 0).
 
 makeF64(_N) ->
+    not_loaded(?LINE).
+readF64(_N) ->
     not_loaded(?LINE).
