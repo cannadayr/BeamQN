@@ -16,7 +16,8 @@ Build (Development)
        $ PATH="$ERL_TOP/bin:$PATH" rebar3 clean   
        $ PATH="$ERL_TOP/bin:$PATH" rebar3 compile
        $ PATH="$ERL_TOP/bin:$PATH" cerl -debug -pa ebin -pa ./_build/default/lib/*/ebin
-   
+       1> beamqn_test:beamqn_bqn_makeF64_tests().
+
    ##### ASAN
 
        $ export ASAN_OPTIONS="log_path=log/asan.log"
