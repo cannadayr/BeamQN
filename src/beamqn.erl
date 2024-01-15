@@ -1,5 +1,5 @@
 -module(beamqn).
--export([makeF64/1,makeF64Vec/2,readF64/1,readF64Vec/1]).
+-export([makeF64/1,makeF64Vec/1,readF64/1,readF64Vec/1]).
 -on_load(init/0).
 
 -define(APPNAME, beamqn).
@@ -24,7 +24,7 @@ init() ->
 
 makeF64(_N) ->
     not_loaded(?LINE).
-makeF64Vec(_N,_W) ->
+makeF64Vec(_N) ->
     not_loaded(?LINE).
 readF64(_N) ->
     not_loaded(?LINE).

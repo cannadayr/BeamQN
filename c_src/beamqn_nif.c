@@ -60,69 +60,39 @@ static ERL_NIF_TERM beamqn_bqn_makeF64(ErlNifEnv* env, int argc, const ERL_NIF_T
 
 static ERL_NIF_TERM beamqn_bqn_makeF64Vec(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
 
-    size_t x;
-    unsigned w_len;
-    ERL_NIF_TERM w_hd, w_tl;
-    double w_cur;
-    double ts0, ts1;
+    unsigned x_len;
+    ERL_NIF_TERM x, x_hd, x_tl;
+    double x_cur;
+    double ts0;
     ERL_NIF_TERM term, tsdiff;
     BQNV* bqn_f64Vec;
 
     ts0 = enif_monotonic_time(ERL_NIF_USEC);
 
-    if (!enif_get_int64(env, argv[0], &x)) {
+    x = argv[0];
+
+    if(!enif_is_list(env, x)) {
         return enif_make_badarg(env);
     }
-    if (!enif_get_list_length(env, argv[1], &w_len)) {
+    if (!enif_get_list_length(env, x, &x_len)) {
         return enif_make_badarg(env);
     }
 
+    double* bqn_arr = enif_alloc(x_len * sizeof(double));
     bqn_f64Vec = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
-    if (w_len == 0) {
-        *bqn_f64Vec = bqn_makeF64Vec(0, (double  []){});
+
+    for (int i = 0; enif_get_list_cell(env,x,&x_hd,(ERL_NIF_TERM*) &x); i++) {
+        if (!enif_get_double(env, x_hd, &x_cur)) {
+            return enif_make_badarg(env);
+        }
+        bqn_arr[i] = x_cur;
     }
-    else {
-        double* bqn_arr = enif_alloc(w_len * sizeof(double));
-        // set the 0th elem
-        if (!enif_get_list_cell(env, argv[1], &w_hd, &w_tl)) {
-            return enif_make_badarg(env);
-        }
-        if (!enif_get_double(env, w_hd, &w_cur)) {
-            return enif_make_badarg(env);
-        }
-        else {
-            bqn_arr[0] = w_cur;
-        }
-        // loop thru the inner elems
-        for (int i = 1; i < w_len - 1; i++) {
-            if (!enif_get_list_cell(env, w_tl, &w_hd, &w_tl)) {
-                return enif_make_badarg(env);
-            }
-            else {
-                if (!enif_get_double(env, w_hd, &w_cur)) {
-                    return enif_make_badarg(env);
-                }
-                bqn_arr[i] = w_cur;
-            }
-        }
-        // set the last elem
-        if (!enif_get_list_cell(env, w_tl, &w_hd, &w_tl)) {
-            return enif_make_badarg(env);
-        }
-        if (!enif_get_double(env, w_hd, &w_cur)) {
-            return enif_make_badarg(env);
-        }
-        else {
-            bqn_arr[w_len - 1] = w_cur;
-        }
-        *bqn_f64Vec = bqn_makeF64Vec(w_len, bqn_arr);
-    }
+    *bqn_f64Vec = bqn_makeF64Vec(x_len, bqn_arr);
 
     term = enif_make_resource(env, bqn_f64Vec);
     enif_release_resource(bqn_f64Vec);
 
-    ts1 = enif_monotonic_time(ERL_NIF_USEC);
-    tsdiff = enif_make_int64(env, ts1-ts0);
+    tsdiff = enif_make_int64(env, enif_monotonic_time(ERL_NIF_USEC)-ts0);
 
     return enif_make_tuple3(env, ok_atom, tsdiff, term);
 
@@ -180,9 +150,9 @@ static ERL_NIF_TERM beamqn_bqn_readF64Vec(ErlNifEnv* env, int argc, const ERL_NI
 
 static ErlNifFunc nif_funcs[] = {
     {"makeF64",    1, beamqn_bqn_makeF64},
-    {"makeF64Vec", 2, beamqn_bqn_makeF64Vec},
+    {"makeF64Vec", 1, beamqn_bqn_makeF64Vec,ERL_NIF_DIRTY_JOB_CPU_BOUND},
     {"readF64",    1, beamqn_bqn_readF64},
-    {"readF64Vec", 1, beamqn_bqn_readF64Vec}
+    {"readF64Vec", 1, beamqn_bqn_readF64Vec,ERL_NIF_DIRTY_JOB_CPU_BOUND}
 };
 
 ERL_NIF_INIT(beamqn, nif_funcs, &beamqn_init, NULL, NULL, NULL)
