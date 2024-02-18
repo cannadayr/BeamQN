@@ -28,7 +28,7 @@ static void beamqn_free_bqnv(ErlNifEnv* env, void* ptr) {
     // If we use the erts allocator, and it does not allow reading past the end, we may
     // need to allocate an additional 64 bytes on every enif_alloc.
     // To use the erts allocator, we will need to either add a new allocator to CBQN,
-    // or overload the malloc/free calls with beamqn equivalents.
+    // or overload the malloc/free calls with erts equivalents.
     bqn_free(*x);
 }
 
@@ -97,7 +97,6 @@ static ERL_NIF_TERM beamqn_bqn_makeF64Vec(ErlNifEnv* env, int argc, const ERL_NI
 
     term = enif_make_resource(env, bqn_f64Vec);
     enif_release_resource(bqn_f64Vec);
-    enif_free(bqn_arr);
 
     tsdiff = enif_make_int64(env, enif_monotonic_time(ERL_NIF_USEC)-ts0);
 
