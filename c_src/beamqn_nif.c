@@ -4,6 +4,7 @@
 #include <bqnffi.h>
 
 ERL_NIF_TERM ok_atom;
+ERL_NIF_TERM error_atom;
 ErlNifResourceType* BEAMQN_BQNV;
 
 static ERL_NIF_TERM beamqn_make_atom(ErlNifEnv* env, const char* atom) {
@@ -17,7 +18,7 @@ static ERL_NIF_TERM beamqn_make_atom(ErlNifEnv* env, const char* atom) {
 }
 
 static ERL_NIF_TERM beamqn_make_error(ErlNifEnv* env, const char* mesg) {
-    return enif_make_tuple2(env, beamqn_make_atom(env, "error"), beamqn_make_atom(env, mesg));
+    return enif_make_tuple2(env, error_atom, beamqn_make_atom(env, mesg));
 }
 
 static void beamqn_free_bqnv(ErlNifEnv* env, void* ptr) {
@@ -34,6 +35,7 @@ static void beamqn_free_bqnv(ErlNifEnv* env, void* ptr) {
 
 static int beamqn_init(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info) {
     ok_atom = beamqn_make_atom(env, "ok");
+    error_atom = beamqn_make_atom(env, "error");
     BEAMQN_BQNV = enif_open_resource_type(env, NULL, "BQNV", beamqn_free_bqnv, ERL_NIF_RT_CREATE|ERL_NIF_RT_TAKEOVER, NULL);
     bqn_init();
     return 0;
