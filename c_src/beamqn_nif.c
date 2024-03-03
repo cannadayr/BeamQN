@@ -43,6 +43,7 @@ static int beamqn_init(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
 
 static ERL_NIF_TERM beamqn_bqn_makeF64(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
 
+    // Stack allocate debug vars for now, even if they're not being used.
     double x, ts0, ts1;
     ERL_NIF_TERM term, tsdiff;
     BQNV* bqn_f64;
@@ -62,7 +63,12 @@ static ERL_NIF_TERM beamqn_bqn_makeF64(ErlNifEnv* env, int argc, const ERL_NIF_T
     ts1 = enif_monotonic_time(ERL_NIF_USEC);
     tsdiff = enif_make_int64(env, ts1-ts0);
 
-    return enif_make_tuple3(env, ok_atom, tsdiff, term);
+    if (argc == 1) {
+        return enif_make_tuple2(env, ok_atom, term);
+    }
+    else if (argc == 2) {
+        return enif_make_tuple3(env, ok_atom, term, tsdiff);
+    }
 
 }
 
@@ -102,7 +108,12 @@ static ERL_NIF_TERM beamqn_bqn_makeF64Vec(ErlNifEnv* env, int argc, const ERL_NI
 
     tsdiff = enif_make_int64(env, enif_monotonic_time(ERL_NIF_USEC)-ts0);
 
-    return enif_make_tuple3(env, ok_atom, tsdiff, term);
+    if (argc == 1) {
+        return enif_make_tuple2(env, ok_atom, term);
+    }
+    else if (argc == 2) {
+        return enif_make_tuple3(env, ok_atom, term, tsdiff);
+    }
 
 }
 
@@ -161,9 +172,13 @@ static ERL_NIF_TERM beamqn_bqn_readF64Vec(ErlNifEnv* env, int argc, const ERL_NI
 
 static ErlNifFunc nif_funcs[] = {
     {"makeF64",    1, beamqn_bqn_makeF64},
+    {"makeF64",    2, beamqn_bqn_makeF64},
     {"makeF64Vec", 1, beamqn_bqn_makeF64Vec,ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"makeF64Vec", 2, beamqn_bqn_makeF64Vec,ERL_NIF_DIRTY_JOB_CPU_BOUND},
     {"readF64",    1, beamqn_bqn_readF64},
-    {"readF64Vec", 1, beamqn_bqn_readF64Vec,ERL_NIF_DIRTY_JOB_CPU_BOUND}
+    {"readF64",    2, beamqn_bqn_readF64},
+    {"readF64Vec", 1, beamqn_bqn_readF64Vec,ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"readF64Vec", 2, beamqn_bqn_readF64Vec,ERL_NIF_DIRTY_JOB_CPU_BOUND}
 };
 
 ERL_NIF_INIT(beamqn, nif_funcs, &beamqn_init, NULL, NULL, NULL)

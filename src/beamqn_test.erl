@@ -5,7 +5,7 @@
 -define(MAX_TSDIFF,1000).
 
 beamqn_bqn_makeF64_test(Arg0) ->
-    {Msg,TsDiff,Ref} = beamqn:makeF64(Arg0),
-    ?assertEqual({ok,true,true},{Msg,TsDiff<?MAX_TSDIFF,erlang:is_reference(Ref)}).
+    {Msg,Ref,TsDiff} = beamqn:makeF64(Arg0,true),
+    ?assertEqual({ok,true,true},{Msg,erlang:is_reference(Ref),TsDiff<?MAX_TSDIFF}).
 beamqn_bqn_makeF64_tests() ->
     beamqn_bqn_makeF64_test(0.0).
