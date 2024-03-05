@@ -1,9 +1,7 @@
 -module(beamqn).
 -export([
-    makeF64/1, makeF64/2,
-    makeF64Vec/1, makeF64Vec/2,
-    readF64/1, readF64/2,
-    readF64Vec/1, readF64Vec/2
+    make/1, make/2,
+    read/1, read/2
 ]).
 -on_load(init/0).
 
@@ -27,19 +25,11 @@ init() ->
     end,
     erlang:load_nif(SoName, 0).
 
-makeF64(_N) ->
+make(_N) ->
     not_loaded(?LINE).
-makeF64(_N,_Opt) ->
+make(_N,_OPT) ->
     not_loaded(?LINE).
-makeF64Vec(_N) ->
+read(_N) ->
     not_loaded(?LINE).
-makeF64Vec(_N,_Opt) ->
-    not_loaded(?LINE).
-readF64(_N) ->
-    not_loaded(?LINE).
-readF64(_N,_Opt) ->
-    not_loaded(?LINE).
-readF64Vec(_N) ->
-    not_loaded(?LINE).
-readF64Vec(_N,_Opt) ->
+read(_N,_OPT) ->
     not_loaded(?LINE).
