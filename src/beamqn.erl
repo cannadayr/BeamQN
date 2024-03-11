@@ -1,5 +1,6 @@
 -module(beamqn).
 -export([
+    eval/1,
     make/1, make/2,
     read/1, read/2
 ]).
@@ -25,6 +26,8 @@ init() ->
     end,
     erlang:load_nif(SoName, 0).
 
+eval(_N) ->
+    not_loaded(?LINE).
 make(_N) ->
     not_loaded(?LINE).
 make(_N,_OPT) ->
