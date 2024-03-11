@@ -40,7 +40,9 @@ static int beamqn_init(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
 }
 
 typedef struct BqnEvalOpt { bool tsdiff; } BqnEvalOpt;
-typedef struct BqnEvalStat { size_t count; ERL_NIF_TERM keys[4]; ERL_NIF_TERM values[4]; } BqnEvalStat;
+#define BQN_EVAL_OPT_N 1 // the number of option variants
+#define BQN_EVAL_OPT_S 7 // the maximum identifier size + 1
+typedef struct BqnEvalStat { size_t count; ERL_NIF_TERM keys[BQN_EVAL_OPT_N]; ERL_NIF_TERM values[BQN_EVAL_OPT_N]; } BqnEvalStat;
 
 static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
 
@@ -58,7 +60,7 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
         ERL_NIF_TERM w, w_hd;
         int w_arity;
         const ERL_NIF_TERM* w_cur;
-        char opt_buf[32];
+        char opt_buf[BQN_EVAL_OPT_S];
 
         w = argv[1];
 
@@ -82,14 +84,14 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
             opt_len = enif_get_atom(env, w_cur[0], opt_buf, sizeof(opt_buf), ERL_NIF_LATIN1);
 
-            if (opt_len == 1 || opt_len == 0 || opt_len > 32) {
+            if (opt_len == 1 || opt_len == 0 || opt_len > BQN_EVAL_OPT_S) {
                 return enif_make_badarg(env);
             }
 
             if (strcmp(opt_buf, "tsdiff") == 0) {
                 opt_len = enif_get_atom(env, w_cur[1], opt_buf, sizeof(opt_buf), ERL_NIF_LATIN1);
 
-                if (opt_len == 1 || opt_len == 0 || opt_len > 32) {
+                if (opt_len == 1 || opt_len == 0 || opt_len > BQN_EVAL_OPT_S) {
                     return enif_make_badarg(env);
                 }
 
@@ -153,7 +155,9 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 }
 
 typedef struct BqnMakeOpt { bool tsdiff; } BqnMakeOpt;
-typedef struct BqnMakeStat { size_t count; ERL_NIF_TERM keys[4]; ERL_NIF_TERM values[4]; } BqnMakeStat;
+#define BQN_MAKE_OPT_N 1 // the number of option variants
+#define BQN_MAKE_OPT_S 7 // the maximum identifier size + 1
+typedef struct BqnMakeStat { size_t count; ERL_NIF_TERM keys[BQN_MAKE_OPT_N]; ERL_NIF_TERM values[BQN_MAKE_OPT_N]; } BqnMakeStat;
 
 static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
 
@@ -171,7 +175,7 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
         ERL_NIF_TERM w, w_hd;
         int w_arity;
         const ERL_NIF_TERM* w_cur;
-        char opt_buf[32];
+        char opt_buf[BQN_MAKE_OPT_S];
 
         w = argv[1];
 
@@ -195,14 +199,14 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
             opt_len = enif_get_atom(env, w_cur[0], opt_buf, sizeof(opt_buf), ERL_NIF_LATIN1);
 
-            if (opt_len == 1 || opt_len == 0 || opt_len > 32) {
+            if (opt_len == 1 || opt_len == 0 || opt_len > BQN_MAKE_OPT_S) {
                 return enif_make_badarg(env);
             }
 
             if (strcmp(opt_buf, "tsdiff") == 0) {
                 opt_len = enif_get_atom(env, w_cur[1], opt_buf, sizeof(opt_buf), ERL_NIF_LATIN1);
 
-                if (opt_len == 1 || opt_len == 0 || opt_len > 32) {
+                if (opt_len == 1 || opt_len == 0 || opt_len > BQN_MAKE_OPT_S) {
                     return enif_make_badarg(env);
                 }
 
@@ -321,7 +325,9 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 }
 
 typedef struct BqnReadOpt { bool tsdiff; } BqnReadOpt;
-typedef struct BqnReadStat { size_t count; ERL_NIF_TERM keys[4]; ERL_NIF_TERM values[4]; } BqnReadStat;
+#define BQN_READ_OPT_N 1 // the number of option variants
+#define BQN_READ_OPT_S 7 // the maximum identifier size + 1
+typedef struct BqnReadStat { size_t count; ERL_NIF_TERM keys[BQN_READ_OPT_N]; ERL_NIF_TERM values[BQN_READ_OPT_N]; } BqnReadStat;
 
 static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
     BQNV* bqnv;
@@ -340,7 +346,7 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
         ERL_NIF_TERM w, w_hd;
         int w_arity;
         const ERL_NIF_TERM* w_cur;
-        char opt_buf[32];
+        char opt_buf[BQN_READ_OPT_S];
 
         w = argv[1];
 
@@ -364,14 +370,14 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
             opt_len = enif_get_atom(env, w_cur[0], opt_buf, sizeof(opt_buf), ERL_NIF_LATIN1);
 
-            if (opt_len == 1 || opt_len == 0 || opt_len > 32) {
+            if (opt_len == 1 || opt_len == 0 || opt_len > BQN_READ_OPT_S) {
                 return enif_make_badarg(env);
             }
 
             if (strcmp(opt_buf, "tsdiff") == 0) {
                 opt_len = enif_get_atom(env, w_cur[1], opt_buf, sizeof(opt_buf), ERL_NIF_LATIN1);
 
-                if (opt_len == 1 || opt_len == 0 || opt_len > 32) {
+                if (opt_len == 1 || opt_len == 0 || opt_len > BQN_READ_OPT_S) {
                     return enif_make_badarg(env);
                 }
 
