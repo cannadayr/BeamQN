@@ -9,6 +9,9 @@ ERL_NIF_TERM ok_atom;
 ERL_NIF_TERM tsdiff_atom;
 ErlNifResourceType* BEAMQN_BQNV;
 
+// opt identifiers
+#define BEAMQN_OPT_TSDIFF 0
+
 static ERL_NIF_TERM beamqn_make_atom(ErlNifEnv* env, const char* atom) {
     ERL_NIF_TERM ret;
 
@@ -43,6 +46,36 @@ typedef struct BqnEvalOpt { bool tsdiff; } BqnEvalOpt;
 #define BQN_EVAL_OPT_N 1 // the number of option variants
 #define BQN_EVAL_OPT_S 7 // the maximum identifier size + 1
 typedef struct BqnEvalStat { size_t count; ERL_NIF_TERM keys[BQN_EVAL_OPT_N]; ERL_NIF_TERM values[BQN_EVAL_OPT_N]; } BqnEvalStat;
+
+bool beamqn_opt_get_bool(ErlNifEnv*, ERL_NIF_TERM, BqnEvalOpt*, char*, char*, int);
+bool beamqn_opt_get_bool(ErlNifEnv* env, ERL_NIF_TERM atom, BqnEvalOpt* opt, char* buf, char* name, int id) {
+    unsigned opt_len;
+    if (strcmp(buf, name) == 0) {
+        opt_len = enif_get_atom(env, atom, buf, sizeof(buf), ERL_NIF_LATIN1);
+
+        if (opt_len == 1 || opt_len == 0 || opt_len > BQN_EVAL_OPT_S) {
+            return false;
+        }
+
+        if (strcmp(buf, "true") == 0) {
+            if (id == BEAMQN_OPT_TSDIFF) {
+                opt->tsdiff = true;
+            }
+        }
+        else if (strcmp(buf, "false") == 0) {
+            if (id == BEAMQN_OPT_TSDIFF) {
+                opt->tsdiff = false;
+            }
+        }
+        else {
+            return false;
+        }
+    }
+    else {
+        return false;
+    }
+    return true;
+}
 
 static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
 
@@ -88,24 +121,7 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
                 return enif_make_badarg(env);
             }
 
-            if (strcmp(opt_buf, "tsdiff") == 0) {
-                opt_len = enif_get_atom(env, w_cur[1], opt_buf, sizeof(opt_buf), ERL_NIF_LATIN1);
-
-                if (opt_len == 1 || opt_len == 0 || opt_len > BQN_EVAL_OPT_S) {
-                    return enif_make_badarg(env);
-                }
-
-                if (strcmp(opt_buf, "true") == 0) {
-                    opt.tsdiff = true;
-                }
-                else if (strcmp(opt_buf, "false") == 0) {
-                    opt.tsdiff = false;
-                }
-                else {
-                    return enif_make_badarg(env);
-                }
-            }
-            else {
+            if (!beamqn_opt_get_bool(env, w_cur[1], &opt, opt_buf, "tsdiff", BEAMQN_OPT_TSDIFF)) {
                 return enif_make_badarg(env);
             }
         }
@@ -461,6 +477,7 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
 static ErlNifFunc nif_funcs[] = {
     {"eval",    1, beamqn_bqn_eval,ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"eval",    2, beamqn_bqn_eval,ERL_NIF_DIRTY_JOB_CPU_BOUND},
     {"make",    1, beamqn_bqn_make,ERL_NIF_DIRTY_JOB_CPU_BOUND},
     {"make",    2, beamqn_bqn_make,ERL_NIF_DIRTY_JOB_CPU_BOUND},
     {"read",    1, beamqn_bqn_read,ERL_NIF_DIRTY_JOB_CPU_BOUND},
