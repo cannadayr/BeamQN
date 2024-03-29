@@ -153,21 +153,19 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
         stat.count++;
     }
 
-    ERL_NIF_TERM rtn;
     if (argc == 1) {
-        rtn = enif_make_tuple2(env, ok_atom, term);
+        return enif_make_tuple2(env, ok_atom, term);
     }
     else if (argc == 2) {
         ERL_NIF_TERM stat_out;
         if (!enif_make_map_from_arrays(env, stat.keys, stat.values, stat.count, &stat_out)) {
             return enif_make_badarg(env);
         }
-        rtn = enif_make_tuple3(env, ok_atom, term, stat_out);
+        return enif_make_tuple3(env, ok_atom, term, stat_out);
     }
     else {
         return enif_make_badarg(env);
     }
-    return rtn;
 }
 
 typedef struct BqnMakeOpt { bool tsdiff; } BqnMakeOpt;
@@ -323,21 +321,19 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
         stat.count++;
     }
 
-    ERL_NIF_TERM rtn;
     if (argc == 1) {
-        rtn = enif_make_tuple2(env, ok_atom, ref);
+        return enif_make_tuple2(env, ok_atom, ref);
     }
     else if (argc == 2) {
         ERL_NIF_TERM stat_out;
         if (!enif_make_map_from_arrays(env, stat.keys, stat.values, stat.count, &stat_out)) {
             return enif_make_badarg(env);
         }
-        rtn = enif_make_tuple3(env, ok_atom, ref, stat_out);
+        return enif_make_tuple3(env, ok_atom, ref, stat_out);
     }
     else {
         return enif_make_badarg(env);
     }
-    return rtn;
 }
 
 typedef struct BqnReadOpt { bool tsdiff; } BqnReadOpt;
@@ -458,21 +454,19 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
         stat.count++;
     }
 
-    ERL_NIF_TERM rtn;
     if (argc == 1) {
-        rtn = enif_make_tuple2(env, ok_atom, term);
+        return enif_make_tuple2(env, ok_atom, term);
     }
     else if (argc == 2) {
         ERL_NIF_TERM stat_out;
         if (!enif_make_map_from_arrays(env, stat.keys, stat.values, stat.count, &stat_out)) {
             return enif_make_badarg(env);
         }
-        rtn = enif_make_tuple3(env, ok_atom, term, stat_out);
+        return enif_make_tuple3(env, ok_atom, term, stat_out);
     }
     else {
         return enif_make_badarg(env);
     }
-    return rtn;
 }
 
 static ErlNifFunc nif_funcs[] = {
