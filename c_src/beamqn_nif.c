@@ -122,8 +122,13 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     char* src = (char*)enif_alloc(x.size + 1);
     memcpy(src, x.data, x.size);
     src[x.size] = '\0';
-    prog = bqn_evalCStr(src);
-    term = enif_make_double(env, bqn_readF64(prog)); // TODO
+    prog = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
+    *prog = bqn_evalCStr(src);
+    term = enif_make_resource(env, prog);
+    enif_release_resource(prog);
+    if (bqn_type(*prog) != 3) { // not a function
+        return enif_make_badarg(env);
+    }
 
     enif_free(src);
 
