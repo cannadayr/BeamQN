@@ -62,16 +62,20 @@ typedef struct BqnCallOpt { bool tsdiff; } BqnCallOpt;
 #define BQN_CALL_OPT_S 7 // the maximum identifier size + 1
 typedef struct BqnCallStat { size_t count; ERL_NIF_TERM keys[BQN_CALL_OPT_N]; ERL_NIF_TERM values[BQN_CALL_OPT_N]; } BqnCallStat;
 
-static ERL_NIF_TERM beamqn_bqn_call1(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
+static ERL_NIF_TERM beamqn_bqn_call(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
 
-    BqnCallOpt opt;
+    BqnCallOpt call_opt;
     BqnCallStat stat;
 
     stat.count = 0;
-    opt.tsdiff = false;
+    call_opt.tsdiff = false;
 
-    ERL_NIF_TERM term;
-    BQNV *prog, *x, *bqnv;
+    ERL_NIF_TERM arg, term;
+    BQNV *prog, *x, *w, *bqnv;
+    int arg_arity;
+    const ERL_NIF_TERM *arg_cur;
+
+    arg = argv[1]; // can be arity 1 or 2
 
     ErlNifTime ts0 = enif_monotonic_time(ERL_NIF_USEC);
 
@@ -79,36 +83,36 @@ static ERL_NIF_TERM beamqn_bqn_call1(ErlNifEnv* env, int argc, const ERL_NIF_TER
         return enif_make_badarg(env);
     }
     if (argc == 3) {
-        unsigned w_len;
-        ERL_NIF_TERM w, w_hd;
-        int w_arity;
-        const ERL_NIF_TERM* w_cur;
+        unsigned opt_len;
+        ERL_NIF_TERM opt, opt_hd;
+        int opt_arity;
+        const ERL_NIF_TERM *opt_cur;
         char buf[BQN_CALL_OPT_S];
 
-        w = argv[2];
+        opt = argv[2];
 
-        if(!enif_is_list(env, w)) {
+        if(!enif_is_list(env, opt)) {
             return enif_make_badarg(env);
         }
-        if (!enif_get_list_length(env, w, &w_len)) {
+        if (!enif_get_list_length(env, opt, &opt_len)) {
             return enif_make_badarg(env);
         }
 
-        for (int i = 0; enif_get_list_cell(env, w, &w_hd, (ERL_NIF_TERM*) &w); i++) {
-            if (!enif_get_tuple(env, w_hd, &w_arity, &w_cur)) {
+        for (int i = 0; enif_get_list_cell(env, opt, &opt_hd, (ERL_NIF_TERM*) &opt); i++) {
+            if (!enif_get_tuple(env, opt_hd, &opt_arity, &opt_cur)) {
                 return enif_make_badarg(env);
             }
-            if (w_arity != 2) {
+            if (opt_arity != 2) {
                 return enif_make_badarg(env);
             }
-            if (!enif_is_atom(env, w_cur[0])) {
+            if (!enif_is_atom(env, opt_cur[0])) {
                 return enif_make_badarg(env);
             }
-            if (!enif_get_atom(env, w_cur[0], buf, BQN_CALL_OPT_S, ERL_NIF_LATIN1)) {
+            if (!enif_get_atom(env, opt_cur[0], buf, BQN_CALL_OPT_S, ERL_NIF_LATIN1)) {
                 return enif_make_badarg(env);
             }
             if (strcmp(buf, "tsdiff") == 0) {
-                if (!beamqn_opt_get_bool(env, w_cur[1], &opt.tsdiff)) {
+                if (!beamqn_opt_get_bool(env, opt_cur[1], &call_opt.tsdiff)) {
                     return enif_make_badarg(env);
                 }
             }
@@ -121,15 +125,30 @@ static ERL_NIF_TERM beamqn_bqn_call1(ErlNifEnv* env, int argc, const ERL_NIF_TER
     if (bqn_type(*prog) != 3) { // not a function
         return enif_make_badarg(env);
     }
-    if (!enif_get_resource(env, argv[1], BEAMQN_BQNV, (void**) &x)) {
-        return enif_make_badarg(env);
-    }
     bqnv = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
-    *bqnv = bqn_call1(*prog, *x);
+    if (enif_is_tuple(env,arg)) { // call2
+        enif_get_tuple(env, arg, &arg_arity, &arg_cur);
+        if (arg_arity != 2) {
+            return enif_make_badarg(env);
+        }
+        if (!enif_get_resource(env, arg_cur[0], BEAMQN_BQNV, (void**) &x)) {
+            return enif_make_badarg(env);
+        }
+        if (!enif_get_resource(env, arg_cur[1], BEAMQN_BQNV, (void**) &w)) {
+            return enif_make_badarg(env);
+        }
+        *bqnv = bqn_call2(*prog, *x, *w);
+    }
+    else { // call1
+        if (!enif_get_resource(env, argv[1], BEAMQN_BQNV, (void**) &x)) {
+            return enif_make_badarg(env);
+        }
+        *bqnv = bqn_call1(*prog, *x);
+    }
     term = enif_make_resource(env, bqnv);
     enif_release_resource(bqnv);
 
-    if (opt.tsdiff) {
+    if (call_opt.tsdiff) {
         stat.keys[stat.count] = tsdiff_atom;
         stat.values[stat.count] = enif_make_int64(env, enif_monotonic_time(ERL_NIF_USEC)-ts0);
         stat.count++;
@@ -502,8 +521,8 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 }
 
 static ErlNifFunc nif_funcs[] = {
-    {"call1",   2, beamqn_bqn_call1,ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"call1",   3, beamqn_bqn_call1,ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"call",   2, beamqn_bqn_call,ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"call",   3, beamqn_bqn_call,ERL_NIF_DIRTY_JOB_CPU_BOUND},
     {"eval",    1, beamqn_bqn_eval,ERL_NIF_DIRTY_JOB_CPU_BOUND},
     {"eval",    2, beamqn_bqn_eval,ERL_NIF_DIRTY_JOB_CPU_BOUND},
     {"make",    1, beamqn_bqn_make,ERL_NIF_DIRTY_JOB_CPU_BOUND},
