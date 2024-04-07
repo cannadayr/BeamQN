@@ -355,7 +355,6 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
             break;
         case ERL_NIF_TERM_TYPE_LIST:
             ERL_NIF_TERM x, x_hd;
-            double x_cur;
             unsigned x_len;
 
             x = argv[0];
@@ -367,10 +366,52 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
             bqnv = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
 
             for (int i = 0; enif_get_list_cell(env,x,&x_hd,(ERL_NIF_TERM*) &x); i++) {
-                if (!enif_get_double(env, x_hd, &x_cur)) {
-                    return enif_make_badarg(env);
+                switch (enif_term_type(env, x_hd)) {
+                    case ERL_NIF_TERM_TYPE_ATOM:
+                        return enif_make_badarg(env);
+                        break;
+                    case ERL_NIF_TERM_TYPE_BITSTRING:
+                        return enif_make_badarg(env);
+                        break;
+                    case ERL_NIF_TERM_TYPE_FLOAT:
+                        double f64_val;
+                        if (!enif_get_double(env, x_hd, &f64_val)) {
+                            return enif_make_badarg(env);
+                        }
+                        f64_vec_val[i] = f64_val;
+                        break;
+                    case ERL_NIF_TERM_TYPE_FUN:
+                        return enif_make_badarg(env);
+                        break;
+                    case ERL_NIF_TERM_TYPE_INTEGER:
+                        int64_t i64_val;
+                        if (!enif_get_int64(env, x_hd, &i64_val)) {
+                            return enif_make_badarg(env);
+                        }
+                        f64_vec_val[i] = (double)i64_val;
+                        break;
+                    case ERL_NIF_TERM_TYPE_LIST:
+                        return enif_make_badarg(env);
+                        break;
+                    case ERL_NIF_TERM_TYPE_MAP:
+                        return enif_make_badarg(env);
+                        break;
+                    case ERL_NIF_TERM_TYPE_PID:
+                        return enif_make_badarg(env);
+                        break;
+                    case ERL_NIF_TERM_TYPE_PORT:
+                        return enif_make_badarg(env);
+                        break;
+                    case ERL_NIF_TERM_TYPE_REFERENCE:
+                        return enif_make_badarg(env);
+                        break;
+                    case ERL_NIF_TERM_TYPE_TUPLE:
+                        return enif_make_badarg(env);
+                        break;
+                    default:
+                        return enif_make_badarg(env);
+                        break;
                 }
-                f64_vec_val[i] = x_cur;
             }
             *bqnv = bqn_makeF64Vec(x_len, f64_vec_val);
 
