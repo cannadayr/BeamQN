@@ -1,6 +1,7 @@
 #include <bqnffi.h>
 #include <erl_nif.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -343,7 +344,14 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
             return enif_make_badarg(env);
             break;
         case ERL_NIF_TERM_TYPE_INTEGER:
-            return enif_make_badarg(env);
+            int64_t i64_val;
+            if (!enif_get_int64(env, argv[0], &i64_val)) {
+                return enif_make_badarg(env);
+            }
+            bqnv = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
+            *bqnv = bqn_makeF64((double)i64_val);
+            ref = enif_make_resource(env, bqnv);
+            enif_release_resource(bqnv);
             break;
         case ERL_NIF_TERM_TYPE_LIST:
             ERL_NIF_TERM x, x_hd;
@@ -521,14 +529,14 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 }
 
 static ErlNifFunc nif_funcs[] = {
-    {"call",   2, beamqn_bqn_call,ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"call",   3, beamqn_bqn_call,ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"eval",    1, beamqn_bqn_eval,ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"eval",    2, beamqn_bqn_eval,ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"make",    1, beamqn_bqn_make,ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"make",    2, beamqn_bqn_make,ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"read",    1, beamqn_bqn_read,ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"read",    2, beamqn_bqn_read,ERL_NIF_DIRTY_JOB_CPU_BOUND}
+    {"call", 2, beamqn_bqn_call,ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"call", 3, beamqn_bqn_call,ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"eval", 1, beamqn_bqn_eval,ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"eval", 2, beamqn_bqn_eval,ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"make", 1, beamqn_bqn_make,ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"make", 2, beamqn_bqn_make,ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"read", 1, beamqn_bqn_read,ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"read", 2, beamqn_bqn_read,ERL_NIF_DIRTY_JOB_CPU_BOUND}
 };
 
 ERL_NIF_INIT(beamqn, nif_funcs, &beamqn_init, NULL, NULL, NULL)
