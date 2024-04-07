@@ -117,6 +117,9 @@ static ERL_NIF_TERM beamqn_bqn_call(ErlNifEnv* env, int argc, const ERL_NIF_TERM
                     return enif_make_badarg(env);
                 }
             }
+            else {
+                return enif_make_badarg(env);
+            }
         }
     }
 
@@ -226,6 +229,9 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
                     return enif_make_badarg(env);
                 }
             }
+            else {
+                return enif_make_badarg(env);
+            }
         }
     }
 
@@ -317,6 +323,9 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
                 if (!beamqn_opt_get_bool(env, opt_cur[1], &make_opt.tsdiff)) {
                     return enif_make_badarg(env);
                 }
+            }
+            else {
+                return enif_make_badarg(env);
             }
         }
     }
@@ -511,6 +520,9 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
                 if (!beamqn_opt_get_bool(env, opt_cur[1], &read_opt.tsdiff)) {
                     return enif_make_badarg(env);
                 }
+            }
+            else {
+                return enif_make_badarg(env);
             }
         }
     }
