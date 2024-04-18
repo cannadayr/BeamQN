@@ -586,7 +586,15 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
                         return enif_make_badarg(env);
                         break;
                     case elt_c32:
-                        return enif_make_badarg(env);
+                        // CBQN treats characters as unsigned 32 bit integers.
+                        // This is equivalent to <<"↕"/utf32-native>> (Erlang) or <<"↕"::utf32-native>> (Elixir).
+                        // However, Elixir uses UTF-8 as its default encoding ("↕" == <<"↕"::utf8>>).
+                        // This currently requires external type conversions.
+                        if (!enif_alloc_binary(len * sizeof(uint32_t), &arr_buf.b.ebin)) {
+                            return enif_make_badarg(env);
+                        }
+                        bqn_readC32Arr(*bqnv, (uint32_t *) arr_buf.b.ebin.data);
+                        term = enif_make_binary(env, &arr_buf.b.ebin);
                         break;
                     default:
                         return enif_make_badarg(env);
