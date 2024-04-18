@@ -379,7 +379,7 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
                 return enif_make_badarg(env);
             }
 
-            double* f64_vec_val = enif_alloc(x_len * sizeof(double));
+            BQNV *obj_vec = enif_alloc(x_len * sizeof(BQNV));
             bqnv = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
 
             for (int i = 0; enif_get_list_cell(env,x,&x_hd,(ERL_NIF_TERM*) &x); i++) {
@@ -388,14 +388,19 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
                         return enif_make_badarg(env);
                         break;
                     case ERL_NIF_TERM_TYPE_BITSTRING:
-                        return enif_make_badarg(env);
+                        if (!enif_inspect_binary(env, x_hd, &binstr)) {
+                            return enif_make_badarg(env);
+                        }
+                        bqnv = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
+                        *bqnv = bqn_makeUTF8Str(binstr.size, (const char*)binstr.data);
+                        obj_vec[i] = *bqnv;
                         break;
                     case ERL_NIF_TERM_TYPE_FLOAT:
                         double f64_val;
                         if (!enif_get_double(env, x_hd, &f64_val)) {
                             return enif_make_badarg(env);
                         }
-                        f64_vec_val[i] = f64_val;
+                        obj_vec[i] = bqn_makeF64(f64_val);
                         break;
                     case ERL_NIF_TERM_TYPE_FUN:
                         return enif_make_badarg(env);
@@ -405,7 +410,7 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
                         if (!enif_get_int64(env, x_hd, &i64_val)) {
                             return enif_make_badarg(env);
                         }
-                        f64_vec_val[i] = (double)i64_val;
+                        obj_vec[i] = bqn_makeF64((double)i64_val);
                         break;
                     case ERL_NIF_TERM_TYPE_LIST:
                         return enif_make_badarg(env);
@@ -430,7 +435,7 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
                         break;
                 }
             }
-            *bqnv = bqn_makeF64Vec(x_len, f64_vec_val);
+            *bqnv = bqn_makeObjVec(x_len, obj_vec);
 
             ref = enif_make_resource(env, bqnv);
             enif_release_resource(bqnv);
@@ -549,14 +554,63 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
                 struct BqnArrBuf {
                     union { double *buf_f64; ErlNifBinary ebin; } b;
                 } arr_buf;
+                ERL_NIF_TERM *ebuf;
 
                 switch (bqn_directArrType(*bqnv)) {
-                    case elt_unk: // treat unknown arrays as numbers
+                    case elt_unk:
+                        ebuf = enif_alloc(len * sizeof(ERL_NIF_TERM));
+                        for (size_t i = 0; i < len; i++) {
+                            BQNV elem = bqn_pick(*bqnv, i);
+                            switch (bqn_type(elem)) {
+                                case 0: // array
+                                    switch (bqn_directArrType(elem)) {
+                                        case elt_unk:
+                                            return enif_make_badarg(env);
+                                            break;
+                                        case elt_f64:
+                                            return enif_make_badarg(env);
+                                            break;
+                                        case elt_i8:
+                                            return enif_make_badarg(env);
+                                            break;
+                                        case elt_i16:
+                                            return enif_make_badarg(env);
+                                            break;
+                                        case elt_i32:
+                                            return enif_make_badarg(env);
+                                            break;
+                                        case elt_c8:
+                                            return enif_make_badarg(env);
+                                            break;
+                                        case elt_c16:
+                                            return enif_make_badarg(env);
+                                            break;
+                                        case elt_c32:
+                                            return enif_make_badarg(env);
+                                            break;
+                                        default:
+                                            return enif_make_badarg(env);
+                                            break;
+
+                                    }
+                                    return enif_make_badarg(env);
+                                    break;
+                                case 1: // number
+                                    ebuf[i] = enif_make_double(env, bqn_toF64(elem));
+                                    break;
+                                default:
+                                    return enif_make_badarg(env);
+                                    break;
+                            }
+                        }
+                        term = enif_make_list_from_array(env, ebuf, len);
+                        enif_free(ebuf);
+                        break;
                     case elt_f64:
                         arr_buf.b.buf_f64 = enif_alloc(len * sizeof(double));
                         bqn_readF64Arr(*bqnv, arr_buf.b.buf_f64);
 
-                        ERL_NIF_TERM *ebuf = enif_alloc(len * sizeof(ERL_NIF_TERM));
+                        ebuf = enif_alloc(len * sizeof(ERL_NIF_TERM));
                         for (int i = 0; i < len; i++) {
                             ebuf[i] = enif_make_double(env, arr_buf.b.buf_f64[i]);
                         }
