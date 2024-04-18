@@ -332,12 +332,20 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
     BQNV* bqnv;
     ERL_NIF_TERM ref;
-    switch (enif_term_type(env,argv[0])) {
+    ErlNifBinary binstr;
+    switch (enif_term_type(env, argv[0])) {
         case ERL_NIF_TERM_TYPE_ATOM:
             return enif_make_badarg(env);
             break;
         case ERL_NIF_TERM_TYPE_BITSTRING:
-            return enif_make_badarg(env);
+            if (!enif_inspect_binary(env, argv[0], &binstr)) {
+                return enif_make_badarg(env);
+            }
+            bqnv = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
+            // https://stackoverflow.com/questions/14746889/casting-from-unsigned-into-signed-char-in-c/14746982#14746982
+            *bqnv = bqn_makeUTF8Str(binstr.size, (const char*)binstr.data);
+            ref = enif_make_resource(env, bqnv);
+            enif_release_resource(bqnv);
             break;
         case ERL_NIF_TERM_TYPE_FLOAT:
             double f64_val;
@@ -538,18 +546,52 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
                 term = enif_make_list(env,0);
             }
             else {
-                double* buf = enif_alloc(len * sizeof(double));
-                bqn_readF64Arr(*bqnv, buf);
+                struct BqnArrBuf {
+                    union { double *buf_f64; ErlNifBinary ebin; } b;
+                } arr_buf;
 
-                ERL_NIF_TERM* ebuf = enif_alloc(len * sizeof(ERL_NIF_TERM));
-                for (int i = 0; i < len; i++) {
-                    ebuf[i] = enif_make_double(env,buf[i]);
+                switch (bqn_directArrType(*bqnv)) {
+                    case elt_unk: // treat unknown arrays as numbers
+                    case elt_f64:
+                        arr_buf.b.buf_f64 = enif_alloc(len * sizeof(double));
+                        bqn_readF64Arr(*bqnv, arr_buf.b.buf_f64);
+
+                        ERL_NIF_TERM *ebuf = enif_alloc(len * sizeof(ERL_NIF_TERM));
+                        for (int i = 0; i < len; i++) {
+                            ebuf[i] = enif_make_double(env, arr_buf.b.buf_f64[i]);
+                        }
+
+                        term = enif_make_list_from_array(env, ebuf, len);
+
+                        enif_free(arr_buf.b.buf_f64);
+                        enif_free(ebuf);
+                        break;
+                    case elt_i8:
+                        return enif_make_badarg(env);
+                        break;
+                    case elt_i16:
+                        return enif_make_badarg(env);
+                        break;
+                    case elt_i32:
+                        return enif_make_badarg(env);
+                        break;
+                    case elt_c8:
+                        if (!enif_alloc_binary(len * sizeof(uint8_t), &arr_buf.b.ebin)) {
+                            return enif_make_badarg(env);
+                        }
+                        bqn_readC8Arr(*bqnv, arr_buf.b.ebin.data);
+                        term = enif_make_binary(env, &arr_buf.b.ebin);
+                        break;
+                    case elt_c16:
+                        return enif_make_badarg(env);
+                        break;
+                    case elt_c32:
+                        return enif_make_badarg(env);
+                        break;
+                    default:
+                        return enif_make_badarg(env);
+                        break;
                 }
-
-                term = enif_make_list_from_array(env,ebuf,len);
-
-                enif_free(buf);
-                enif_free(ebuf);
             }
             break;
         case 1: // number
