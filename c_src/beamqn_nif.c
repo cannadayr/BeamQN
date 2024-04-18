@@ -580,7 +580,13 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
                                             return enif_make_badarg(env);
                                             break;
                                         case elt_c8:
-                                            return enif_make_badarg(env);
+                                            ErlNifBinary etmp;
+                                            size_t strlen = bqn_bound(elem);
+                                            if (!enif_alloc_binary(strlen * sizeof(uint8_t), &etmp)) {
+                                                return enif_make_badarg(env);
+                                            }
+                                            bqn_readC8Arr(elem, etmp.data);
+                                            ebuf[i] = enif_make_binary(env, &etmp);
                                             break;
                                         case elt_c16:
                                             return enif_make_badarg(env);
@@ -591,9 +597,7 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
                                         default:
                                             return enif_make_badarg(env);
                                             break;
-
                                     }
-                                    return enif_make_badarg(env);
                                     break;
                                 case 1: // number
                                     ebuf[i] = enif_make_double(env, bqn_toF64(elem));
