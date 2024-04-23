@@ -75,6 +75,7 @@ rebar3.crashdump
 /cover/
 
 # The directory Mix downloads your dependencies sources to.
+# We are using a non-default path in _build/ due to dual rebar/mix configurations.
 #/deps/
 
 # Where third-party dependencies like ExDoc output generated docs.

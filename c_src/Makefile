@@ -10,7 +10,8 @@ ERTS_INCLUDE_DIR ?= $(shell erl -noshell -eval "io:format(\"~ts/erts-~ts/include
 ERL_INTERFACE_INCLUDE_DIR ?= $(shell erl -noshell -eval "io:format(\"~ts\", [code:lib_dir(erl_interface, include)])." -s init stop)
 ERL_INTERFACE_LIB_DIR ?= $(shell erl -noshell -eval "io:format(\"~ts\", [code:lib_dir(erl_interface, lib)])." -s init stop)
 
-LIBCBQN ?= $(REBAR_DEPS_DIR)/cbqn/libcbqn.a
+DEPS_DIR ?= $(REBAR_DEPS_DIR)
+LIBCBQN ?= $(DEPS_DIR)/cbqn/libcbqn.a
 
 C_SRC_DIR = $(CURDIR)
 C_SRC_OUTPUT ?= $(CURDIR)/../priv/$(PROJECT).so
@@ -33,8 +34,8 @@ else ifeq ($(UNAME_SYS), Linux)
 	CXXFLAGS ?= -O3 -finline-functions -Wall
 endif
 
-CFLAGS += -fPIC -I $(ERTS_INCLUDE_DIR) -I $(ERL_INTERFACE_INCLUDE_DIR) -I $(REBAR_DEPS_DIR)/cbqn/include
-CXXFLAGS += -fPIC -I $(ERTS_INCLUDE_DIR) -I $(ERL_INTERFACE_INCLUDE_DIR) -I $(REBAR_DEPS_DIR)/cbqn/include
+CFLAGS += -fPIC -I $(ERTS_INCLUDE_DIR) -I $(ERL_INTERFACE_INCLUDE_DIR) -I $(LIBCBQN)/include
+CXXFLAGS += -fPIC -I $(ERTS_INCLUDE_DIR) -I $(ERL_INTERFACE_INCLUDE_DIR) -I $(LIBCBQN)/include
 
 LDLIBS += -L $(ERL_INTERFACE_LIB_DIR) -lei -lm
 LDFLAGS += -shared
