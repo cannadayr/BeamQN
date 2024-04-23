@@ -12,7 +12,12 @@ defmodule BeamQN do
       :world
 
   """
-  def hello do
-    :world
-  end
+  defdelegate call(n,x), to: :beamqn
+  defdelegate call(n,x,opt), to: :beamqn
+  defdelegate eval(n), to: :beamqn
+  defdelegate eval(n,opt), to: :beamqn
+  defdelegate make(n), to: :beamqn
+  defdelegate make(n,opt), to: :beamqn
+  defdelegate read(n), to: :beamqn
+  defdelegate read(n,opt), to: :beamqn
 end

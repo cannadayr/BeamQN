@@ -65,9 +65,11 @@ defmodule BeamQN.MixProject do
         case :os.type() do
           {_family, os} when os in [:linux, :darwin, :solaris] ->
             Mix.Shell.cmd("make clean", [cd: "#{Mix.Project.deps_path()}/cbqn"], &print_info/1)
-            Mix.Shell.cmd("rm -f libcbqn.a", [cd: "#{Mix.Project.deps_path()}/cbqn"], &print_info/1)
           {_family, os} when os in [:freebsd] ->
             Mix.Shell.cmd("gmake clean", [cd: "#{Mix.Project.deps_path()}/cbqn"], &print_info/1)
+        end
+        case :os.type() do
+          {_family, os} when os in [:linux, :darwin, :solaris, :freebsd] ->
             Mix.Shell.cmd("rm -f libcbqn.a", [cd: "#{Mix.Project.deps_path()}/cbqn"], &print_info/1)
         end
     end

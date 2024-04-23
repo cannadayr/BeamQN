@@ -1,0 +1,3 @@
+%{
+  "cbqn": {:git, "https://github.com/dzaima/CBQN.git", "a6a088868cc3b27ae3979828740eb35f79ce11ac", [ref: "a6a0888"]},
+}
