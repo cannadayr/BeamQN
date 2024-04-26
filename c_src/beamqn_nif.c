@@ -6,8 +6,40 @@
 #include <stdlib.h>
 #include <string.h>
 
-ERL_NIF_TERM ok_atom;
-ERL_NIF_TERM tsdiff_atom;
+ERL_NIF_TERM beamqn_atom_core_ok;
+ERL_NIF_TERM beamqn_atom_opt_tsdiff;
+ERL_NIF_TERM beamqn_atom_err_badtype;
+ERL_NIF_TERM beamqn_atom_err_oom;
+ERL_NIF_TERM beamqn_atom_typ_elt_unk;
+ERL_NIF_TERM beamqn_atom_typ_elt_f64;
+ERL_NIF_TERM beamqn_atom_typ_elt_i8;
+ERL_NIF_TERM beamqn_atom_typ_elt_i16;
+ERL_NIF_TERM beamqn_atom_typ_elt_i32;
+ERL_NIF_TERM beamqn_atom_typ_elt_c8;
+ERL_NIF_TERM beamqn_atom_typ_elt_c16;
+ERL_NIF_TERM beamqn_atom_typ_elt_c32;
+ERL_NIF_TERM beamqn_atom_typ_elt_undef;
+ERL_NIF_TERM beamqn_atom_typ_bqn_arr;
+ERL_NIF_TERM beamqn_atom_typ_bqn_num;
+ERL_NIF_TERM beamqn_atom_typ_bqn_char;
+ERL_NIF_TERM beamqn_atom_typ_bqn_func;
+ERL_NIF_TERM beamqn_atom_typ_bqn_mod1;
+ERL_NIF_TERM beamqn_atom_typ_bqn_mod2;
+ERL_NIF_TERM beamqn_atom_typ_bqn_ns;
+ERL_NIF_TERM beamqn_atom_typ_bqn_undef;
+ERL_NIF_TERM beamqn_atom_typ_nif_atom;
+ERL_NIF_TERM beamqn_atom_typ_nif_bitstring;
+ERL_NIF_TERM beamqn_atom_typ_nif_float;
+ERL_NIF_TERM beamqn_atom_typ_nif_fun;
+ERL_NIF_TERM beamqn_atom_typ_nif_integer;
+ERL_NIF_TERM beamqn_atom_typ_nif_list;
+ERL_NIF_TERM beamqn_atom_typ_nif_map;
+ERL_NIF_TERM beamqn_atom_typ_nif_pid;
+ERL_NIF_TERM beamqn_atom_typ_nif_port;
+ERL_NIF_TERM beamqn_atom_typ_nif_reference;
+ERL_NIF_TERM beamqn_atom_typ_nif_tuple;
+ERL_NIF_TERM beamqn_atom_typ_nif_undef;
+
 ErlNifResourceType* BEAMQN_BQNV;
 
 static ERL_NIF_TERM beamqn_make_atom(ErlNifEnv* env, const char* atom) {
@@ -51,8 +83,40 @@ static void beamqn_free_bqnv(ErlNifEnv* env, void* ptr) {
 }
 
 static int beamqn_init(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info) {
-    ok_atom = beamqn_make_atom(env, "ok");
-    tsdiff_atom = beamqn_make_atom(env, "tsdiff");
+    beamqn_atom_core_ok             = beamqn_make_atom(env, "ok");
+    beamqn_atom_opt_tsdiff          = beamqn_make_atom(env, "tsdiff");
+    beamqn_atom_err_badtype         = beamqn_make_atom(env, "badtype");
+    beamqn_atom_err_oom             = beamqn_make_atom(env, "oom");
+    beamqn_atom_typ_elt_unk         = beamqn_make_atom(env, "elt_unk");
+    beamqn_atom_typ_elt_f64         = beamqn_make_atom(env, "elt_f64");
+    beamqn_atom_typ_elt_i8          = beamqn_make_atom(env, "elt_i8");
+    beamqn_atom_typ_elt_i16         = beamqn_make_atom(env, "elt_i16");
+    beamqn_atom_typ_elt_i32         = beamqn_make_atom(env, "elt_i32");
+    beamqn_atom_typ_elt_c8          = beamqn_make_atom(env, "elt_c8");
+    beamqn_atom_typ_elt_c16         = beamqn_make_atom(env, "elt_c16");
+    beamqn_atom_typ_elt_c32         = beamqn_make_atom(env, "elt_c32");
+    beamqn_atom_typ_elt_undef       = beamqn_make_atom(env, "elt_undef");
+    beamqn_atom_typ_bqn_arr         = beamqn_make_atom(env, "bqn_arr");
+    beamqn_atom_typ_bqn_num         = beamqn_make_atom(env, "bqn_num");
+    beamqn_atom_typ_bqn_char        = beamqn_make_atom(env, "bqn_char");
+    beamqn_atom_typ_bqn_func        = beamqn_make_atom(env, "bqn_func");
+    beamqn_atom_typ_bqn_mod1        = beamqn_make_atom(env, "bqn_mod1");
+    beamqn_atom_typ_bqn_mod2        = beamqn_make_atom(env, "bqn_mod2");
+    beamqn_atom_typ_bqn_ns          = beamqn_make_atom(env, "bqn_ns");
+    beamqn_atom_typ_bqn_undef       = beamqn_make_atom(env, "bqn_undef");
+    beamqn_atom_typ_nif_atom        = beamqn_make_atom(env, "nif_atom");
+    beamqn_atom_typ_nif_bitstring   = beamqn_make_atom(env, "nif_bitstring");
+    beamqn_atom_typ_nif_float       = beamqn_make_atom(env, "nif_float");
+    beamqn_atom_typ_nif_fun         = beamqn_make_atom(env, "nif_fun");
+    beamqn_atom_typ_nif_integer     = beamqn_make_atom(env, "nif_integer");
+    beamqn_atom_typ_nif_list        = beamqn_make_atom(env, "nif_list");
+    beamqn_atom_typ_nif_map         = beamqn_make_atom(env, "nif_map");
+    beamqn_atom_typ_nif_pid         = beamqn_make_atom(env, "nif_pid");
+    beamqn_atom_typ_nif_port        = beamqn_make_atom(env, "nif_port");
+    beamqn_atom_typ_nif_reference   = beamqn_make_atom(env, "nif_reference");
+    beamqn_atom_typ_nif_tuple       = beamqn_make_atom(env, "nif_tuple");
+    beamqn_atom_typ_nif_undef       = beamqn_make_atom(env, "nif_undef");
+
     BEAMQN_BQNV = enif_open_resource_type(env, NULL, "BQNV", beamqn_free_bqnv, ERL_NIF_RT_CREATE|ERL_NIF_RT_TAKEOVER, NULL);
     bqn_init();
     return 0;
@@ -153,20 +217,20 @@ static ERL_NIF_TERM beamqn_bqn_call(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     enif_release_resource(bqnv);
 
     if (call_opt.tsdiff) {
-        stat.keys[stat.count] = tsdiff_atom;
+        stat.keys[stat.count] = beamqn_atom_opt_tsdiff;
         stat.values[stat.count] = enif_make_int64(env, enif_monotonic_time(ERL_NIF_USEC)-ts0);
         stat.count++;
     }
 
     if (argc == 2) {
-        return enif_make_tuple2(env, ok_atom, term);
+        return enif_make_tuple2(env, beamqn_atom_core_ok, term);
     }
     else if (argc == 3) {
         ERL_NIF_TERM stat_out;
         if (!enif_make_map_from_arrays(env, stat.keys, stat.values, stat.count, &stat_out)) {
             return enif_make_badarg(env);
         }
-        return enif_make_tuple3(env, ok_atom, term, stat_out);
+        return enif_make_tuple3(env, beamqn_atom_core_ok, term, stat_out);
     }
     else {
         return enif_make_badarg(env);
@@ -252,20 +316,20 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     enif_free(src);
 
     if (eval_opt.tsdiff) {
-        stat.keys[stat.count] = tsdiff_atom;
+        stat.keys[stat.count] = beamqn_atom_opt_tsdiff;
         stat.values[stat.count] = enif_make_int64(env, enif_monotonic_time(ERL_NIF_USEC)-ts0);
         stat.count++;
     }
 
     if (argc == 1) {
-        return enif_make_tuple2(env, ok_atom, term);
+        return enif_make_tuple2(env, beamqn_atom_core_ok, term);
     }
     else if (argc == 2) {
         ERL_NIF_TERM stat_out;
         if (!enif_make_map_from_arrays(env, stat.keys, stat.values, stat.count, &stat_out)) {
             return enif_make_badarg(env);
         }
-        return enif_make_tuple3(env, ok_atom, term, stat_out);
+        return enif_make_tuple3(env, beamqn_atom_core_ok, term, stat_out);
     }
     else {
         return enif_make_badarg(env);
@@ -333,13 +397,14 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     BQNV* bqnv;
     ERL_NIF_TERM ref;
     ErlNifBinary binstr;
+    // encode
     switch (enif_term_type(env, argv[0])) {
         case ERL_NIF_TERM_TYPE_ATOM:
-            return enif_make_badarg(env);
+            return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_atom));
             break;
         case ERL_NIF_TERM_TYPE_BITSTRING:
             if (!enif_inspect_binary(env, argv[0], &binstr)) {
-                return enif_make_badarg(env);
+                return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_bitstring));
             }
             bqnv = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
             // https://stackoverflow.com/questions/14746889/casting-from-unsigned-into-signed-char-in-c/14746982#14746982
@@ -350,7 +415,7 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
         case ERL_NIF_TERM_TYPE_FLOAT:
             double f64_val;
             if (!enif_get_double(env, argv[0], &f64_val)) {
-                return enif_make_badarg(env);
+                return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_float));
             }
             bqnv = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
             *bqnv = bqn_makeF64(f64_val);
@@ -358,12 +423,12 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
             enif_release_resource(bqnv);
             break;
         case ERL_NIF_TERM_TYPE_FUN:
-            return enif_make_badarg(env);
+            return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_fun));
             break;
         case ERL_NIF_TERM_TYPE_INTEGER:
             int64_t i64_val;
             if (!enif_get_int64(env, argv[0], &i64_val)) {
-                return enif_make_badarg(env);
+                return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_integer));
             }
             bqnv = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
             *bqnv = bqn_makeF64((double)i64_val);
@@ -376,7 +441,7 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
             x = argv[0];
             if (!enif_get_list_length(env, argv[0], &x_len)) {
-                return enif_make_badarg(env);
+                return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_list));
             }
 
             BQNV *obj_vec = enif_alloc(x_len * sizeof(BQNV));
@@ -385,11 +450,11 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
             for (int i = 0; enif_get_list_cell(env,x,&x_hd,(ERL_NIF_TERM*) &x); i++) {
                 switch (enif_term_type(env, x_hd)) {
                     case ERL_NIF_TERM_TYPE_ATOM:
-                        return enif_make_badarg(env);
+                        return enif_raise_exception(env, enif_make_tuple3(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_list, beamqn_atom_typ_nif_atom));
                         break;
                     case ERL_NIF_TERM_TYPE_BITSTRING:
                         if (!enif_inspect_binary(env, x_hd, &binstr)) {
-                            return enif_make_badarg(env);
+                            return enif_raise_exception(env, enif_make_tuple3(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_list, beamqn_atom_typ_nif_bitstring));
                         }
                         bqnv = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
                         *bqnv = bqn_makeUTF8Str(binstr.size, (const char*)binstr.data);
@@ -398,40 +463,40 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
                     case ERL_NIF_TERM_TYPE_FLOAT:
                         double f64_val;
                         if (!enif_get_double(env, x_hd, &f64_val)) {
-                            return enif_make_badarg(env);
+                            return enif_raise_exception(env, enif_make_tuple3(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_list, beamqn_atom_typ_nif_float));
                         }
                         obj_vec[i] = bqn_makeF64(f64_val);
                         break;
                     case ERL_NIF_TERM_TYPE_FUN:
-                        return enif_make_badarg(env);
+                        return enif_raise_exception(env, enif_make_tuple3(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_list, beamqn_atom_typ_nif_fun));
                         break;
                     case ERL_NIF_TERM_TYPE_INTEGER:
                         int64_t i64_val;
                         if (!enif_get_int64(env, x_hd, &i64_val)) {
-                            return enif_make_badarg(env);
+                            return enif_raise_exception(env, enif_make_tuple3(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_list, beamqn_atom_typ_nif_integer));
                         }
                         obj_vec[i] = bqn_makeF64((double)i64_val);
                         break;
                     case ERL_NIF_TERM_TYPE_LIST:
-                        return enif_make_badarg(env);
+                        return enif_raise_exception(env, enif_make_tuple3(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_list, beamqn_atom_typ_nif_list));
                         break;
                     case ERL_NIF_TERM_TYPE_MAP:
-                        return enif_make_badarg(env);
+                        return enif_raise_exception(env, enif_make_tuple3(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_list, beamqn_atom_typ_nif_map));
                         break;
                     case ERL_NIF_TERM_TYPE_PID:
-                        return enif_make_badarg(env);
+                        return enif_raise_exception(env, enif_make_tuple3(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_list, beamqn_atom_typ_nif_pid));
                         break;
                     case ERL_NIF_TERM_TYPE_PORT:
-                        return enif_make_badarg(env);
+                        return enif_raise_exception(env, enif_make_tuple3(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_list, beamqn_atom_typ_nif_port));
                         break;
                     case ERL_NIF_TERM_TYPE_REFERENCE:
-                        return enif_make_badarg(env);
+                        return enif_raise_exception(env, enif_make_tuple3(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_list, beamqn_atom_typ_nif_reference));
                         break;
                     case ERL_NIF_TERM_TYPE_TUPLE:
-                        return enif_make_badarg(env);
+                        return enif_raise_exception(env, enif_make_tuple3(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_list, beamqn_atom_typ_nif_tuple));
                         break;
                     default:
-                        return enif_make_badarg(env);
+                        return enif_raise_exception(env, enif_make_tuple3(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_list, beamqn_atom_typ_nif_undef));
                         break;
                 }
             }
@@ -441,40 +506,40 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
             enif_release_resource(bqnv);
             break;
         case ERL_NIF_TERM_TYPE_MAP:
-            return enif_make_badarg(env);
+            return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_map));
             break;
         case ERL_NIF_TERM_TYPE_PID:
-            return enif_make_badarg(env);
+            return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_pid));
             break;
         case ERL_NIF_TERM_TYPE_PORT:
-            return enif_make_badarg(env);
+            return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_port));
             break;
         case ERL_NIF_TERM_TYPE_REFERENCE:
-            return enif_make_badarg(env);
+            return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_reference));
             break;
         case ERL_NIF_TERM_TYPE_TUPLE:
-            return enif_make_badarg(env);
+            return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_tuple));
             break;
         default:
-            return enif_make_badarg(env);
+            return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_undef));
             break;
     }
 
     if (make_opt.tsdiff) {
-        stat.keys[stat.count] = tsdiff_atom;
+        stat.keys[stat.count] = beamqn_atom_opt_tsdiff;
         stat.values[stat.count] = enif_make_int64(env, enif_monotonic_time(ERL_NIF_USEC)-ts0);
         stat.count++;
     }
 
     if (argc == 1) {
-        return enif_make_tuple2(env, ok_atom, ref);
+        return enif_make_tuple2(env, beamqn_atom_core_ok, ref);
     }
     else if (argc == 2) {
         ERL_NIF_TERM stat_out;
         if (!enif_make_map_from_arrays(env, stat.keys, stat.values, stat.count, &stat_out)) {
             return enif_make_badarg(env);
         }
-        return enif_make_tuple3(env, ok_atom, ref, stat_out);
+        return enif_make_tuple3(env, beamqn_atom_core_ok, ref, stat_out);
     }
     else {
         return enif_make_badarg(env);
@@ -544,6 +609,7 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
         return enif_make_badarg(env);
     }
 
+    // decode
     switch (bqn_type(*bqnv)) {
         case 0: // array
             size_t len = bqn_bound(*bqnv);
@@ -565,45 +631,60 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
                                 case 0: // array
                                     switch (bqn_directArrType(elem)) {
                                         case elt_unk:
-                                            return enif_make_badarg(env);
+                                            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple4(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk)));
                                             break;
                                         case elt_f64:
-                                            return enif_make_badarg(env);
+                                            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple4(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_f64)));
                                             break;
                                         case elt_i8:
-                                            return enif_make_badarg(env);
+                                            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple4(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i8)));
                                             break;
                                         case elt_i16:
-                                            return enif_make_badarg(env);
+                                            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple4(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i16)));
                                             break;
                                         case elt_i32:
-                                            return enif_make_badarg(env);
+                                            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple4(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i32)));
                                             break;
                                         case elt_c8:
                                             ErlNifBinary etmp;
                                             size_t strlen = bqn_bound(elem);
                                             if (!enif_alloc_binary(strlen * sizeof(uint8_t), &etmp)) {
-                                                return enif_make_badarg(env);
+                                                return enif_raise_exception(env,beamqn_atom_err_oom);
                                             }
                                             bqn_readC8Arr(elem, etmp.data);
                                             ebuf[i] = enif_make_binary(env, &etmp);
                                             break;
                                         case elt_c16:
-                                            return enif_make_badarg(env);
+                                            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple4(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_c16)));
                                             break;
                                         case elt_c32:
-                                            return enif_make_badarg(env);
+                                            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple4(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_c32)));
                                             break;
                                         default:
-                                            return enif_make_badarg(env);
+                                            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple4(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_undef)));
                                             break;
                                     }
                                     break;
                                 case 1: // number
                                     ebuf[i] = enif_make_double(env, bqn_toF64(elem));
                                     break;
+                                case 2: // char
+                                    return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple3(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_char)));
+                                    break;
+                                case 3: // func
+                                    return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple3(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_func)));
+                                    break;
+                                case 4: // mod1
+                                    return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple3(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_mod1)));
+                                    break;
+                                case 5: // mod2
+                                    return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple3(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_mod2)));
+                                    break;
+                                case 6: // ns
+                                    return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple3(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_ns)));
+                                    break;
                                 default:
-                                    return enif_make_badarg(env);
+                                    return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple3(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_undef)));
                                     break;
                             }
                         }
@@ -625,23 +706,23 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
                         enif_free(ebuf);
                         break;
                     case elt_i8:
-                        return enif_make_badarg(env);
+                        return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i8)));
                         break;
                     case elt_i16:
-                        return enif_make_badarg(env);
+                        return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i16)));
                         break;
                     case elt_i32:
-                        return enif_make_badarg(env);
+                        return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i32)));
                         break;
                     case elt_c8:
                         if (!enif_alloc_binary(len * sizeof(uint8_t), &arr_buf.b.ebin)) {
-                            return enif_make_badarg(env);
+                            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_c8)));
                         }
                         bqn_readC8Arr(*bqnv, arr_buf.b.ebin.data);
                         term = enif_make_binary(env, &arr_buf.b.ebin);
                         break;
                     case elt_c16:
-                        return enif_make_badarg(env);
+                        return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_c16)));
                         break;
                     case elt_c32:
                         // CBQN treats characters as unsigned 32 bit integers.
@@ -649,13 +730,13 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
                         // However, Elixir uses UTF-8 as its default encoding ("↕" == <<"↕"::utf8>>).
                         // This currently requires external type conversions.
                         if (!enif_alloc_binary(len * sizeof(uint32_t), &arr_buf.b.ebin)) {
-                            return enif_make_badarg(env);
+                            return enif_raise_exception(env,beamqn_atom_err_oom);
                         }
                         bqn_readC32Arr(*bqnv, (uint32_t *) arr_buf.b.ebin.data);
                         term = enif_make_binary(env, &arr_buf.b.ebin);
                         break;
                     default:
-                        return enif_make_badarg(env);
+                        return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_undef)));
                         break;
                 }
             }
@@ -663,26 +744,42 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
         case 1: // number
             term = enif_make_double(env, bqn_readF64(*bqnv));
             break;
-        default:
-            return enif_make_badarg(env);
+        case 2: // char
+            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_bqn_char));
             break;
+        case 3: // func
+            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_bqn_func));
+            break;
+        case 4: // mod1
+            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_bqn_mod1));
+            break;
+        case 5: // mod2
+            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_bqn_mod2));
+            break;
+        case 6: // ns
+            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_bqn_ns));
+            break;
+        default:
+            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_bqn_undef));
+            break;
+
     }
 
     if (read_opt.tsdiff) {
-        stat.keys[stat.count] = tsdiff_atom;
+        stat.keys[stat.count] = beamqn_atom_opt_tsdiff;
         stat.values[stat.count] = enif_make_int64(env, enif_monotonic_time(ERL_NIF_USEC)-ts0);
         stat.count++;
     }
 
     if (argc == 1) {
-        return enif_make_tuple2(env, ok_atom, term);
+        return enif_make_tuple2(env, beamqn_atom_core_ok, term);
     }
     else if (argc == 2) {
         ERL_NIF_TERM stat_out;
         if (!enif_make_map_from_arrays(env, stat.keys, stat.values, stat.count, &stat_out)) {
             return enif_make_badarg(env);
         }
-        return enif_make_tuple3(env, ok_atom, term, stat_out);
+        return enif_make_tuple3(env, beamqn_atom_core_ok, term, stat_out);
     }
     else {
         return enif_make_badarg(env);
@@ -690,14 +787,14 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 }
 
 static ErlNifFunc nif_funcs[] = {
-    {"call", 2, beamqn_bqn_call,ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"call", 3, beamqn_bqn_call,ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"eval", 1, beamqn_bqn_eval,ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"eval", 2, beamqn_bqn_eval,ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"make", 1, beamqn_bqn_make,ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"make", 2, beamqn_bqn_make,ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"read", 1, beamqn_bqn_read,ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"read", 2, beamqn_bqn_read,ERL_NIF_DIRTY_JOB_CPU_BOUND}
+    {"call", 2, beamqn_bqn_call, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"call", 3, beamqn_bqn_call, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"eval", 1, beamqn_bqn_eval, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"eval", 2, beamqn_bqn_eval, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"make", 1, beamqn_bqn_make, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"make", 2, beamqn_bqn_make, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"read", 1, beamqn_bqn_read, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"read", 2, beamqn_bqn_read, ERL_NIF_DIRTY_JOB_CPU_BOUND}
 };
 
 ERL_NIF_INIT(beamqn, nif_funcs, &beamqn_init, NULL, NULL, NULL)
