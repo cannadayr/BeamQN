@@ -75,7 +75,7 @@ bool beamqn_opt_get_bool(ErlNifEnv* env, ERL_NIF_TERM atom, bool* opt) {
 static void beamqn_free_bqnv(ErlNifEnv* env, void* ptr) {
     BQNV* x = (BQNV*) ptr;
     // CBQN uses its own memory management system (see CBQN/src/opt/) and reads past the end
-    // of allocations (see CBQN/src/opt/mm_malloc.c).
+    // of allocations (see CBQN/src/opt/mm_malloc.c and VERIFY_TAIL).
     // It is unknown if allocations made with enif_alloc allow reading past the end.
     // If we use the erts allocator, and it does not allow reading past the end, we may
     // need to allocate an additional 64 bytes on every enif_alloc.
