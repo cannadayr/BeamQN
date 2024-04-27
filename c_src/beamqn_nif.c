@@ -7,6 +7,7 @@
 #include <string.h>
 
 ERL_NIF_TERM beamqn_atom_core_ok;
+ERL_NIF_TERM beamqn_atom_core_err;
 ERL_NIF_TERM beamqn_atom_opt_tsdiff;
 ERL_NIF_TERM beamqn_atom_err_badtype;
 ERL_NIF_TERM beamqn_atom_err_oom;
@@ -86,6 +87,7 @@ static void beamqn_free_bqnv(ErlNifEnv* env, void* ptr) {
 
 static int beamqn_init(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info) {
     beamqn_atom_core_ok             = beamqn_make_atom(env, "ok");
+    beamqn_atom_core_err            = beamqn_make_atom(env, "err");
     beamqn_atom_opt_tsdiff          = beamqn_make_atom(env, "tsdiff");
     beamqn_atom_err_badtype         = beamqn_make_atom(env, "badtype");
     beamqn_atom_err_oom             = beamqn_make_atom(env, "oom");
@@ -203,7 +205,7 @@ static ERL_NIF_TERM beamqn_bqn_call(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     if (!enif_get_resource(env, argv[0], BEAMQN_BQNV, (void**) &prog)) {
         return enif_make_badarg(env);
     }
-    if (bqn_type(*prog) != 3) { // not a function
+    if (3 != bqn_type(*prog)) { // not a function
         return enif_make_badarg(env);
     }
     bqnv = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
@@ -265,8 +267,8 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
     ErlNifBinary x;
     BQNV *func;
-    BQNV prog;
-    ERL_NIF_TERM term;
+    BQNV prog, err;
+    ERL_NIF_TERM term, atom;
 
     ErlNifTime ts0 = enif_monotonic_time(ERL_NIF_USEC);
 
@@ -320,18 +322,39 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     prog = bqn_call1(*beamqn_bqn_safe_eval, bqn_makeUTF8Str(x.size, (const char*)x.data));
 
     if (1 == (int)bqn_toF64(bqn_pick(prog,0))) {
-        return enif_make_badarg(env);
+        err = bqn_pick(prog,1);
+        if (0 != bqn_type(err)) { // not an array
+            return enif_make_badarg(env);
+        }
+        switch (bqn_directArrType(err)) {
+            case elt_c32:
+                // This is substantially similar to "decode" steps in `beamqn_bqn_read`.
+                size_t len = bqn_bound(err);
+                ErlNifBinary ebin;
+                if (!enif_alloc_binary(len * sizeof(uint32_t), &ebin)) {
+                    return enif_raise_exception(env,beamqn_atom_err_oom);
+                }
+                bqn_readC32Arr(err, (uint32_t *) ebin.data);
+                atom = beamqn_atom_core_err;
+                term = enif_make_binary(env, &ebin);
+                break;
+            default:
+                return enif_make_badarg(env);
+                break;
+        }
     }
+    else {
+        func = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
+        *func = bqn_pick(prog,1);
 
-    func = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
-    *func = bqn_pick(prog,1);
+        if (3 != bqn_type(*func)) { // not a function
+            return enif_make_badarg(env);
+        }
 
-    if (3 != bqn_type(*func)) { // not a function
-        return enif_make_badarg(env);
+        atom = beamqn_atom_core_ok;
+        term = enif_make_resource(env, func);
+        enif_release_resource(func);
     }
-
-    term = enif_make_resource(env, func);
-    enif_release_resource(func);
 
     if (eval_opt.tsdiff) {
         stat.keys[stat.count] = beamqn_atom_opt_tsdiff;
@@ -340,14 +363,14 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     }
 
     if (argc == 1) {
-        return enif_make_tuple2(env, beamqn_atom_core_ok, term);
+        return enif_make_tuple2(env, atom, term);
     }
     else if (argc == 2) {
         ERL_NIF_TERM stat_out;
         if (!enif_make_map_from_arrays(env, stat.keys, stat.values, stat.count, &stat_out)) {
             return enif_make_badarg(env);
         }
-        return enif_make_tuple3(env, beamqn_atom_core_ok, term, stat_out);
+        return enif_make_tuple3(env, atom, term, stat_out);
     }
     else {
         return enif_make_badarg(env);
