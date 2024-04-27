@@ -42,6 +42,8 @@ ERL_NIF_TERM beamqn_atom_typ_nif_undef;
 
 ErlNifResourceType* BEAMQN_BQNV;
 
+static BQNV *beamqn_bqn_safe_eval;
+
 static ERL_NIF_TERM beamqn_make_atom(ErlNifEnv* env, const char* atom) {
     ERL_NIF_TERM ret;
 
@@ -119,7 +121,18 @@ static int beamqn_init(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
 
     BEAMQN_BQNV = enif_open_resource_type(env, NULL, "BQNV", beamqn_free_bqnv, ERL_NIF_RT_CREATE|ERL_NIF_RT_TAKEOVER, NULL);
     bqn_init();
+
+    // Throwing and catching errors in CBQN leaks memory!
+    // See https://github.com/dzaima/CBQN/#limitations
+    // This is currently necessary as crashing the BEAM due to an invalid source input is extremely annoying.
+    beamqn_bqn_safe_eval = enif_alloc(sizeof(BQNV));
+    *beamqn_bqn_safe_eval = bqn_evalCStr("({𝕊:⟨0,•BQN 𝕩⟩}⎊{𝕊:⟨1,•CurrentError@⟩})");
+
     return 0;
+}
+
+static void beamqn_unload(ErlNifEnv* env, void* priv_data) {
+    enif_free(beamqn_bqn_safe_eval);
 }
 
 typedef struct BqnCallOpt { bool tsdiff; } BqnCallOpt;
@@ -251,7 +264,7 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     eval_opt.tsdiff = false;
 
     ErlNifBinary x;
-    BQNV *func, *safe_eval;
+    BQNV *func;
     BQNV prog;
     ERL_NIF_TERM term;
 
@@ -304,11 +317,7 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
         return enif_make_badarg(env);
     }
 
-    // Requires CATCH_ERRORS=1
-    safe_eval = enif_alloc(sizeof(BQNV));
-    *safe_eval = bqn_evalCStr("({𝕊:⟨0,•BQN 𝕩⟩}⎊{𝕊:⟨1,•CurrentError@⟩})");
-
-    prog = bqn_call1(*safe_eval, bqn_makeUTF8Str(x.size, (const char*)x.data));
+    prog = bqn_call1(*beamqn_bqn_safe_eval, bqn_makeUTF8Str(x.size, (const char*)x.data));
 
     if (1 == (int)bqn_toF64(bqn_pick(prog,0))) {
         return enif_make_badarg(env);
@@ -323,7 +332,6 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
     term = enif_make_resource(env, func);
     enif_release_resource(func);
-    enif_free(safe_eval);
 
     if (eval_opt.tsdiff) {
         stat.keys[stat.count] = beamqn_atom_opt_tsdiff;
@@ -807,4 +815,4 @@ static ErlNifFunc nif_funcs[] = {
     {"read", 2, beamqn_bqn_read, ERL_NIF_DIRTY_JOB_CPU_BOUND}
 };
 
-ERL_NIF_INIT(beamqn, nif_funcs, &beamqn_init, NULL, NULL, NULL)
+ERL_NIF_INIT(beamqn, nif_funcs, &beamqn_init, NULL, NULL, &beamqn_unload)

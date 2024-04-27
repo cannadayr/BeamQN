@@ -54,9 +54,9 @@ defmodule BeamQN.MixProject do
   defp compile_cbqn do
     case :os.type() do
       {_family, os} when os in [:linux, :darwin, :solaris] ->
-        "make f='-DNO_MMAP' FFI=0 static-lib"
+        "make f='-DNO_MMAP' CATCH_ERRORS=1 FFI=0 static-lib"
       {_family, os} when os in [:freebsd] ->
-        "gmake f='-DNO_MMAP' FFI=0 static-lib"
+        "gmake f='-DNO_MMAP' CATCH_ERRORS=1 FFI=0 static-lib"
     end
   end
 
