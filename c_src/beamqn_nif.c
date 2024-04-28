@@ -41,7 +41,7 @@ ERL_NIF_TERM beamqn_atom_typ_nif_reference;
 ERL_NIF_TERM beamqn_atom_typ_nif_tuple;
 ERL_NIF_TERM beamqn_atom_typ_nif_undef;
 
-ErlNifResourceType* BEAMQN_BQNV;
+ErlNifResourceType *BEAMQN_BQNV;
 
 static BQNV *beamqn_bqn_safe_eval;
 
@@ -74,7 +74,7 @@ bool beamqn_opt_get_bool(ErlNifEnv* env, ERL_NIF_TERM atom, bool* opt) {
 }
 
 static void beamqn_free_bqnv(ErlNifEnv* env, void* ptr) {
-    BQNV* x = (BQNV*) ptr;
+    BQNV *x = (BQNV*) ptr;
     // CBQN uses its own memory management system (see CBQN/src/opt/) and reads past the end
     // of allocations (see CBQN/src/opt/mm_malloc.c and VERIFY_TAIL).
     // It is unknown if allocations made with enif_alloc allow reading past the end.
@@ -435,7 +435,7 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
         }
     }
 
-    BQNV* bqnv;
+    BQNV *bqnv;
     ERL_NIF_TERM ref;
     ErlNifBinary binstr;
     // encode
@@ -593,7 +593,7 @@ typedef struct BqnReadOpt { bool tsdiff; } BqnReadOpt;
 typedef struct BqnReadStat { size_t count; ERL_NIF_TERM keys[BQN_READ_OPT_N]; ERL_NIF_TERM values[BQN_READ_OPT_N]; } BqnReadStat;
 
 static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
-    BQNV* bqnv;
+    BQNV *bqnv;
     ERL_NIF_TERM term;
     BqnReadOpt read_opt;
     BqnReadStat stat;
