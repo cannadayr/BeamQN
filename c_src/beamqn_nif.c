@@ -542,6 +542,120 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     }
 }
 
+enum BQNV_TYPE { BQN_ARRAY, BQN_NUMBER, BQN_CHAR, BQN_FUNC, BQN_MOD1, BQN_MOD2, BQN_NS};
+BQNV beamqn_read_bqnv_terminal(ErlNifEnv*, enum BQNV_TYPE, BQNV*);
+BQNV beamqn_read_bqnv_terminal(ErlNifEnv* env, enum BQNV_TYPE bqnv_type, BQNV* bqnv) {
+    switch (bqnv_type) {
+        case BQN_NUMBER:
+            return enif_make_double(env, bqn_readF64(*bqnv));
+            break;
+        case BQN_CHAR:
+            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_bqn_char));
+            break;
+        default:
+            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_bqn_undef));
+            break;
+    }
+}
+
+BQNV beamqn_read_bqnv_elt_terminal(ErlNifEnv*, BQNElType, size_t, BQNV*);
+BQNV beamqn_read_bqnv_elt_terminal(ErlNifEnv* env, BQNElType elt_type, size_t len, BQNV* bqnv) {
+    struct BqnArrBuf {
+        union { double *buf_f64; ErlNifBinary ebin; } b;
+    } arr_buf;
+    switch (elt_type) {
+        case elt_f64:
+            ERL_NIF_TERM *ebuf;
+            arr_buf.b.buf_f64 = enif_alloc(len * sizeof(double));
+            bqn_readF64Arr(*bqnv, arr_buf.b.buf_f64);
+
+            ebuf = enif_alloc(len * sizeof(ERL_NIF_TERM));
+            for (int i = 0; i < len; i++) {
+                ebuf[i] = enif_make_double(env, arr_buf.b.buf_f64[i]);
+            }
+
+            return enif_make_list_from_array(env, ebuf, len);
+
+            enif_free(arr_buf.b.buf_f64);
+            enif_free(ebuf);
+            break;
+        case elt_i8:
+            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i8)));
+            break;
+        case elt_i16:
+            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i16)));
+            break;
+        case elt_i32:
+            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i32)));
+            break;
+        case elt_c8:
+            if (!enif_alloc_binary(len * sizeof(uint8_t), &arr_buf.b.ebin)) {
+                return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_c8)));
+            }
+            bqn_readC8Arr(*bqnv, arr_buf.b.ebin.data);
+            return enif_make_binary(env, &arr_buf.b.ebin);
+            break;
+        case elt_c16:
+            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_c16)));
+            break;
+        case elt_c32:
+            // CBQN treats characters as unsigned 32 bit integers.
+            // This is equivalent to <<"↕"/utf32-native>> (Erlang) or <<"↕"::utf32-native>> (Elixir).
+            // However, Elixir uses UTF-8 as its default encoding ("↕" == <<"↕"::utf8>>).
+            // This currently requires external type conversions.
+            if (!enif_alloc_binary(len * sizeof(uint32_t), &arr_buf.b.ebin)) {
+                return enif_raise_exception(env,beamqn_atom_err_oom);
+            }
+            bqn_readC32Arr(*bqnv, (uint32_t *) arr_buf.b.ebin.data);
+            return enif_make_binary(env, &arr_buf.b.ebin);
+            break;
+        default:
+            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_undef)));
+            break;
+    }
+}
+
+bool beamqn_read_bqnv(ErlNifEnv*, BQNV*, ERL_NIF_TERM*);
+bool beamqn_read_bqnv(ErlNifEnv* env, BQNV* bqnv, ERL_NIF_TERM* term) {
+    enum BQNV_TYPE type = bqn_type(*bqnv);
+    if (type == BQN_NS) {
+        // only allow arrays as nonterminals.
+        return enif_make_badarg(env);
+    }
+    else if ((type == BQN_FUNC) || (type == BQN_MOD1) || (type == BQN_MOD2)) {
+        // don't allow these terminals.
+        return enif_make_badarg(env);
+    }
+    else if ((type == BQN_NUMBER) || (type == BQN_CHAR)) {
+        *term = beamqn_read_bqnv_terminal(env, type, bqnv);
+    }
+    else if (type == BQN_ARRAY) {
+        size_t len = bqn_bound(*bqnv);
+        if (len == 0) {
+            *term = enif_make_list(env, 0);
+        }
+        else {
+            BQNElType elt_type = bqn_directArrType(*bqnv);
+            // only elt_unk arrays are non-terminating.
+            if (elt_type != elt_unk) {
+                *term = beamqn_read_bqnv_elt_terminal(env, elt_type, len, bqnv);
+            }
+            else {
+                ERL_NIF_TERM *ebuf;
+                ebuf = enif_alloc(len * sizeof(ERL_NIF_TERM));
+                for (size_t i = 0; i < len; i++) {
+                    BQNV elem = bqn_pick(*bqnv, i);
+                    // This is not tail call optimized, and vulnerable to stack overflows!
+                    beamqn_read_bqnv(env, &elem, &ebuf[i]);
+                }
+                *term = enif_make_list_from_array(env, ebuf, len);
+                enif_free(ebuf);
+            }
+        }
+    }
+    return true;
+}
+
 typedef struct BqnReadOpt { bool tsdiff; } BqnReadOpt;
 #define BQN_READ_OPT_N 1 // the number of option variants
 #define BQN_READ_OPT_S 7 // the maximum identifier size + 1
@@ -605,160 +719,8 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
         return enif_make_badarg(env);
     }
 
-    // decode
-    switch (bqn_type(*bqnv)) {
-        case 0: // array
-            size_t len = bqn_bound(*bqnv);
-            if (len == 0) {
-                term = enif_make_list(env,0);
-            }
-            else {
-                struct BqnArrBuf {
-                    union { double *buf_f64; ErlNifBinary ebin; } b;
-                } arr_buf;
-                ERL_NIF_TERM *ebuf;
-
-                switch (bqn_directArrType(*bqnv)) {
-                    case elt_unk:
-                        ebuf = enif_alloc(len * sizeof(ERL_NIF_TERM));
-                        for (size_t i = 0; i < len; i++) {
-                            BQNV elem = bqn_pick(*bqnv, i);
-                            switch (bqn_type(elem)) {
-                                case 0: // array
-                                    switch (bqn_directArrType(elem)) {
-                                        case elt_unk:
-                                            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple4(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk)));
-                                            break;
-                                        case elt_f64:
-                                            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple4(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_f64)));
-                                            break;
-                                        case elt_i8:
-                                            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple4(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i8)));
-                                            break;
-                                        case elt_i16:
-                                            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple4(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i16)));
-                                            break;
-                                        case elt_i32:
-                                            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple4(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i32)));
-                                            break;
-                                        case elt_c8:
-                                            ErlNifBinary etmp;
-                                            size_t strlen = bqn_bound(elem);
-                                            if (!enif_alloc_binary(strlen * sizeof(uint8_t), &etmp)) {
-                                                return enif_raise_exception(env,beamqn_atom_err_oom);
-                                            }
-                                            bqn_readC8Arr(elem, etmp.data);
-                                            ebuf[i] = enif_make_binary(env, &etmp);
-                                            break;
-                                        case elt_c16:
-                                            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple4(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_c16)));
-                                            break;
-                                        case elt_c32:
-                                            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple4(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_c32)));
-                                            break;
-                                        default:
-                                            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple4(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_undef)));
-                                            break;
-                                    }
-                                    break;
-                                case 1: // number
-                                    ebuf[i] = enif_make_double(env, bqn_toF64(elem));
-                                    break;
-                                case 2: // char
-                                    return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple3(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_char)));
-                                    break;
-                                case 3: // func
-                                    return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple3(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_func)));
-                                    break;
-                                case 4: // mod1
-                                    return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple3(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_mod1)));
-                                    break;
-                                case 5: // mod2
-                                    return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple3(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_mod2)));
-                                    break;
-                                case 6: // ns
-                                    return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple3(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_ns)));
-                                    break;
-                                default:
-                                    return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple3(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_unk, beamqn_atom_typ_bqn_undef)));
-                                    break;
-                            }
-                        }
-                        term = enif_make_list_from_array(env, ebuf, len);
-                        enif_free(ebuf);
-                        break;
-                    case elt_f64:
-                        arr_buf.b.buf_f64 = enif_alloc(len * sizeof(double));
-                        bqn_readF64Arr(*bqnv, arr_buf.b.buf_f64);
-
-                        ebuf = enif_alloc(len * sizeof(ERL_NIF_TERM));
-                        for (int i = 0; i < len; i++) {
-                            ebuf[i] = enif_make_double(env, arr_buf.b.buf_f64[i]);
-                        }
-
-                        term = enif_make_list_from_array(env, ebuf, len);
-
-                        enif_free(arr_buf.b.buf_f64);
-                        enif_free(ebuf);
-                        break;
-                    case elt_i8:
-                        return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i8)));
-                        break;
-                    case elt_i16:
-                        return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i16)));
-                        break;
-                    case elt_i32:
-                        return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i32)));
-                        break;
-                    case elt_c8:
-                        if (!enif_alloc_binary(len * sizeof(uint8_t), &arr_buf.b.ebin)) {
-                            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_c8)));
-                        }
-                        bqn_readC8Arr(*bqnv, arr_buf.b.ebin.data);
-                        term = enif_make_binary(env, &arr_buf.b.ebin);
-                        break;
-                    case elt_c16:
-                        return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_c16)));
-                        break;
-                    case elt_c32:
-                        // CBQN treats characters as unsigned 32 bit integers.
-                        // This is equivalent to <<"↕"/utf32-native>> (Erlang) or <<"↕"::utf32-native>> (Elixir).
-                        // However, Elixir uses UTF-8 as its default encoding ("↕" == <<"↕"::utf8>>).
-                        // This currently requires external type conversions.
-                        if (!enif_alloc_binary(len * sizeof(uint32_t), &arr_buf.b.ebin)) {
-                            return enif_raise_exception(env,beamqn_atom_err_oom);
-                        }
-                        bqn_readC32Arr(*bqnv, (uint32_t *) arr_buf.b.ebin.data);
-                        term = enif_make_binary(env, &arr_buf.b.ebin);
-                        break;
-                    default:
-                        return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_undef)));
-                        break;
-                }
-            }
-            break;
-        case 1: // number
-            term = enif_make_double(env, bqn_readF64(*bqnv));
-            break;
-        case 2: // char
-            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_bqn_char));
-            break;
-        case 3: // func
-            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_bqn_func));
-            break;
-        case 4: // mod1
-            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_bqn_mod1));
-            break;
-        case 5: // mod2
-            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_bqn_mod2));
-            break;
-        case 6: // ns
-            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_bqn_ns));
-            break;
-        default:
-            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_bqn_undef));
-            break;
-
+    if (!beamqn_read_bqnv(env, bqnv, &term)) {
+        return enif_make_badarg(env);
     }
 
     if (read_opt.tsdiff) {
