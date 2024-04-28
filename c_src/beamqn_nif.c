@@ -560,23 +560,23 @@ BQNV beamqn_read_bqnv_terminal(ErlNifEnv* env, enum BQNV_TYPE bqnv_type, BQNV* b
 
 BQNV beamqn_read_bqnv_elt_terminal(ErlNifEnv*, BQNElType, size_t, BQNV*);
 BQNV beamqn_read_bqnv_elt_terminal(ErlNifEnv* env, BQNElType elt_type, size_t len, BQNV* bqnv) {
-    struct BqnArrBuf {
-        union { double *buf_f64; ErlNifBinary ebin; } b;
-    } arr_buf;
+    struct EltBuf {
+        union { double *f64; ErlNifBinary bin; } b;
+    } elt_buf;
     switch (elt_type) {
         case elt_f64:
             ERL_NIF_TERM *ebuf;
-            arr_buf.b.buf_f64 = enif_alloc(len * sizeof(double));
-            bqn_readF64Arr(*bqnv, arr_buf.b.buf_f64);
+            elt_buf.b.f64 = enif_alloc(len * sizeof(double));
+            bqn_readF64Arr(*bqnv, elt_buf.b.f64);
 
             ebuf = enif_alloc(len * sizeof(ERL_NIF_TERM));
             for (int i = 0; i < len; i++) {
-                ebuf[i] = enif_make_double(env, arr_buf.b.buf_f64[i]);
+                ebuf[i] = enif_make_double(env, elt_buf.b.f64[i]);
             }
 
             return enif_make_list_from_array(env, ebuf, len);
 
-            enif_free(arr_buf.b.buf_f64);
+            enif_free(elt_buf.b.f64);
             enif_free(ebuf);
             break;
         case elt_i8:
@@ -589,11 +589,11 @@ BQNV beamqn_read_bqnv_elt_terminal(ErlNifEnv* env, BQNElType elt_type, size_t le
             return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i32)));
             break;
         case elt_c8:
-            if (!enif_alloc_binary(len * sizeof(uint8_t), &arr_buf.b.ebin)) {
+            if (!enif_alloc_binary(len * sizeof(uint8_t), &elt_buf.b.bin)) {
                 return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_c8)));
             }
-            bqn_readC8Arr(*bqnv, arr_buf.b.ebin.data);
-            return enif_make_binary(env, &arr_buf.b.ebin);
+            bqn_readC8Arr(*bqnv, elt_buf.b.bin.data);
+            return enif_make_binary(env, &elt_buf.b.bin);
             break;
         case elt_c16:
             return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_c16)));
@@ -603,11 +603,11 @@ BQNV beamqn_read_bqnv_elt_terminal(ErlNifEnv* env, BQNElType elt_type, size_t le
             // This is equivalent to <<"↕"/utf32-native>> (Erlang) or <<"↕"::utf32-native>> (Elixir).
             // However, Elixir uses UTF-8 as its default encoding ("↕" == <<"↕"::utf8>>).
             // This currently requires external type conversions.
-            if (!enif_alloc_binary(len * sizeof(uint32_t), &arr_buf.b.ebin)) {
+            if (!enif_alloc_binary(len * sizeof(uint32_t), &elt_buf.b.bin)) {
                 return enif_raise_exception(env,beamqn_atom_err_oom);
             }
-            bqn_readC32Arr(*bqnv, (uint32_t *) arr_buf.b.ebin.data);
-            return enif_make_binary(env, &arr_buf.b.ebin);
+            bqn_readC32Arr(*bqnv, (uint32_t *) elt_buf.b.bin.data);
+            return enif_make_binary(env, &elt_buf.b.bin);
             break;
         default:
             return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_undef)));
