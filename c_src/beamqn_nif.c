@@ -580,23 +580,23 @@ BQNV beamqn_read_bqnv_elt_terminal(ErlNifEnv* env, BQNElType elt_type, size_t le
             enif_free(ebuf);
             break;
         case elt_i8:
-            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i8)));
+            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_elt_i8));
             break;
         case elt_i16:
-            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i16)));
+            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_elt_i16));
             break;
         case elt_i32:
-            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_i32)));
+            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_elt_i32));
             break;
         case elt_c8:
             if (!enif_alloc_binary(len * sizeof(uint8_t), &elt_buf.b.bin)) {
-                return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_c8)));
+                return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_elt_c8));
             }
             bqn_readC8Arr(*bqnv, elt_buf.b.bin.data);
             return enif_make_binary(env, &elt_buf.b.bin);
             break;
         case elt_c16:
-            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_c16)));
+            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_elt_c16));
             break;
         case elt_c32:
             // CBQN treats characters as unsigned 32 bit integers.
@@ -610,7 +610,7 @@ BQNV beamqn_read_bqnv_elt_terminal(ErlNifEnv* env, BQNElType elt_type, size_t le
             return enif_make_binary(env, &elt_buf.b.bin);
             break;
         default:
-            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, enif_make_tuple2(env, beamqn_atom_typ_bqn_arr, beamqn_atom_typ_elt_undef)));
+            return enif_raise_exception(env,enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_elt_undef));
             break;
     }
 }
