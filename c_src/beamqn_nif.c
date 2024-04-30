@@ -73,6 +73,22 @@ bool beamqn_opt_get_bool(ErlNifEnv* env, ERL_NIF_TERM atom, bool* opt) {
     return true;
 }
 
+bool beamqn_decode_c32(ErlNifEnv*, size_t, BQNV*, ERL_NIF_TERM*, ERL_NIF_TERM*);
+bool beamqn_decode_c32(ErlNifEnv *env, size_t len, BQNV *bqnv, ERL_NIF_TERM *term, ERL_NIF_TERM *err) {
+    // CBQN treats characters as unsigned 32 bit integers.
+    // This is equivalent to <<"↕"/utf32-native>> (Erlang) or <<"↕"::utf32-native>> (Elixir).
+    // However, Elixir uses UTF-8 as its default encoding ("↕" == <<"↕"::utf8>>).
+    // This currently requires external type conversions.
+    ErlNifBinary ebin;
+    if (!enif_alloc_binary(len * sizeof(uint32_t), &ebin)) {
+        *err = beamqn_atom_err_oom;
+        return false;
+    }
+    bqn_readC32Arr(*bqnv, (uint32_t *) ebin.data);
+    *term = enif_make_binary(env, &ebin);
+    return true;
+}
+
 static void beamqn_free_bqnv(ErlNifEnv* env, void* ptr) {
     BQNV *x = (BQNV*) ptr;
     // CBQN uses its own memory management system (see CBQN/src/opt/) and reads past the end
@@ -267,8 +283,8 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
     ErlNifBinary x;
     BQNV *func;
-    BQNV prog, err;
-    ERL_NIF_TERM term, atom;
+    BQNV prog, bqn_err;
+    ERL_NIF_TERM term, err, atom;
 
     ErlNifTime ts0 = enif_monotonic_time(ERL_NIF_USEC);
 
@@ -322,24 +338,20 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     prog = bqn_call1(*beamqn_bqn_safe_eval, bqn_makeUTF8Str(x.size, (const char*)x.data));
 
     if (1 == (int)bqn_toF64(bqn_pick(prog,0))) {
-        err = bqn_pick(prog,1);
-        if (0 != bqn_type(err)) { // not an array
+        bqn_err = bqn_pick(prog,1);
+        if (0 != bqn_type(bqn_err)) { // not an array
             return enif_make_badarg(env);
         }
-        switch (bqn_directArrType(err)) {
+        switch (bqn_directArrType(bqn_err)) {
             case elt_c32:
-                // This is substantially similar to "decode" steps in `beamqn_bqn_read`.
-                size_t len = bqn_bound(err);
-                ErlNifBinary ebin;
-                if (!enif_alloc_binary(len * sizeof(uint32_t), &ebin)) {
-                    return enif_raise_exception(env,beamqn_atom_err_oom);
+                size_t len = bqn_bound(bqn_err);
+                if (!beamqn_decode_c32(env, len, &bqn_err, &term, &err)) {
+                    return enif_raise_exception(env, err);
                 }
-                bqn_readC32Arr(err, (uint32_t *) ebin.data);
                 atom = beamqn_atom_core_err;
-                term = enif_make_binary(env, &ebin);
                 break;
             default:
-                return enif_make_badarg(env);
+                return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_core_err, beamqn_atom_typ_elt_undef));
                 break;
         }
     }
@@ -578,7 +590,7 @@ bool beamqn_read_bqnv_terminal(ErlNifEnv* env, enum BQNV_TYPE bqnv_type, BQNV* b
 }
 
 bool beamqn_read_bqnv_elt_terminal(ErlNifEnv*, BQNElType, size_t, BQNV*, ERL_NIF_TERM*, ERL_NIF_TERM*);
-bool beamqn_read_bqnv_elt_terminal(ErlNifEnv* env, BQNElType elt_type, size_t len, BQNV* bqnv, ERL_NIF_TERM *term, ERL_NIF_TERM *err) {
+bool beamqn_read_bqnv_elt_terminal(ErlNifEnv *env, BQNElType elt_type, size_t len, BQNV* bqnv, ERL_NIF_TERM *term, ERL_NIF_TERM *err) {
     struct EltBuf {
         union { double *f64; ErlNifBinary bin; } b;
     } elt_buf;
@@ -625,17 +637,12 @@ bool beamqn_read_bqnv_elt_terminal(ErlNifEnv* env, BQNElType elt_type, size_t le
             return false;
             break;
         case elt_c32:
-            // CBQN treats characters as unsigned 32 bit integers.
-            // This is equivalent to <<"↕"/utf32-native>> (Erlang) or <<"↕"::utf32-native>> (Elixir).
-            // However, Elixir uses UTF-8 as its default encoding ("↕" == <<"↕"::utf8>>).
-            // This currently requires external type conversions.
-            if (!enif_alloc_binary(len * sizeof(uint32_t), &elt_buf.b.bin)) {
-                *err = beamqn_atom_err_oom;
+            if (!beamqn_decode_c32(env, len, bqnv, term, err)) {
                 return false;
             }
-            bqn_readC32Arr(*bqnv, (uint32_t *) elt_buf.b.bin.data);
-            *term = enif_make_binary(env, &elt_buf.b.bin);
-            return true;
+            else {
+                return true;
+            }
             break;
         default:
             *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_elt_undef);
