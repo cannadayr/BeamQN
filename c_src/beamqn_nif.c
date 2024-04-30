@@ -377,65 +377,81 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     }
 }
 
-BQNV beamqn_make_bqnv_terminal(ErlNifEnv*, ERL_NIF_TERM);
-BQNV beamqn_make_bqnv_terminal(ErlNifEnv* env, ERL_NIF_TERM term) {
+bool beamqn_make_bqnv_terminal(ErlNifEnv*, ERL_NIF_TERM, BQNV, ERL_NIF_TERM*);
+bool beamqn_make_bqnv_terminal(ErlNifEnv* env, ERL_NIF_TERM term, BQNV bqnv, ERL_NIF_TERM *err) {
     switch (enif_term_type(env, term)) {
         case ERL_NIF_TERM_TYPE_ATOM:
-            return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_atom));
+            *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_atom);
+            return false;
             break;
         case ERL_NIF_TERM_TYPE_BITSTRING:
             ErlNifBinary ebin;
             if (!enif_inspect_binary(env, term, &ebin)) {
-                return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_bitstring));
+                *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_bitstring);
+                return false;
             }
             // https://stackoverflow.com/questions/14746889/casting-from-unsigned-into-signed-char-in-c/14746982#14746982
-            return bqn_makeUTF8Str(ebin.size, (const char*)ebin.data);
+            bqnv = bqn_makeUTF8Str(ebin.size, (const char*)ebin.data);
+            return true;
             break;
         case ERL_NIF_TERM_TYPE_FLOAT:
             double f64_val;
             if (!enif_get_double(env, term, &f64_val)) {
-                return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_float));
+                *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_float);
+                return false;
             }
-            return bqn_makeF64(f64_val);
+            bqnv = bqn_makeF64(f64_val);
+            return true;
             break;
         case ERL_NIF_TERM_TYPE_FUN:
-            return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_fun));
+            *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_fun);
+            return false;
             break;
         case ERL_NIF_TERM_TYPE_INTEGER:
             int64_t i64_val;
             if (!enif_get_int64(env, term, &i64_val)) {
-                return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_integer));
+                *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_integer);
+                return false;
             }
-            return bqn_makeF64((double)i64_val);
+            bqnv = bqn_makeF64((double)i64_val);
+            return true;
             break;
         case ERL_NIF_TERM_TYPE_PID:
-            return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_pid));
+            *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_pid);
+            return false;
             break;
         case ERL_NIF_TERM_TYPE_PORT:
-            return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_port));
+            *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_port);
+            return false;
             break;
         case ERL_NIF_TERM_TYPE_REFERENCE:
-            return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_reference));
+            *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_reference);
+            return false;
             break;
         default:
-            return enif_raise_exception(env, enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_undef));
+            *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_undef);
+            return false;
             break;
     }
 }
 
-bool beamqn_make_bqnv(ErlNifEnv*, ERL_NIF_TERM, BQNV*);
-bool beamqn_make_bqnv(ErlNifEnv* env, ERL_NIF_TERM term, BQNV* bqnv) {
+bool beamqn_make_bqnv(ErlNifEnv*, ERL_NIF_TERM, BQNV*, ERL_NIF_TERM*);
+bool beamqn_make_bqnv(ErlNifEnv* env, ERL_NIF_TERM term, BQNV* bqnv, ERL_NIF_TERM *err) {
     if (enif_is_map(env, term) || enif_is_tuple(env, term)) {
         // only allow lists as nonterminals.
-        return enif_make_badarg(env);
+        *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_list);
+        return false;
     }
     else if (!(enif_is_list(env, term) || enif_is_map(env, term) || enif_is_tuple(env, term))) {
-        *bqnv = beamqn_make_bqnv_terminal(env, term);
+        if (!beamqn_make_bqnv_terminal(env, term, *bqnv, err)) {
+            return false;
+        }
     }
     else {
         unsigned len;
         if (!enif_get_list_length(env, term, &len)) {
-            return enif_make_badarg(env);
+            *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_list);
+            return false;
         }
         BQNV *arr = enif_alloc(len * sizeof(BQNV));
         if (0 == len) {
@@ -445,7 +461,7 @@ bool beamqn_make_bqnv(ErlNifEnv* env, ERL_NIF_TERM term, BQNV* bqnv) {
             ERL_NIF_TERM hd;
             for (int i = 0; enif_get_list_cell(env, term, &hd, (ERL_NIF_TERM*) &term); i++) {
                 // This is not tail call optimized, and vulnerable to stack overflows!
-                beamqn_make_bqnv(env, hd, &arr[i]);
+                beamqn_make_bqnv(env, hd, &arr[i], err);
             }
             *bqnv = bqn_makeObjVec(len, arr);
         }
@@ -512,11 +528,11 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     }
 
     BQNV *bqnv;
-    ERL_NIF_TERM resource;
+    ERL_NIF_TERM err, resource;
 
     bqnv = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
-    if (!beamqn_make_bqnv(env, argv[0], bqnv)) {
-        return enif_make_badarg(env);
+    if (!beamqn_make_bqnv(env, argv[0], bqnv, &err)) {
+        return enif_raise_exception(env, err);
     }
     resource = enif_make_resource(env, bqnv);
     enif_release_resource(bqnv);
