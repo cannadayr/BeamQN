@@ -377,8 +377,8 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     }
 }
 
-bool beamqn_make_bqnv_terminal(ErlNifEnv*, ERL_NIF_TERM, BQNV, ERL_NIF_TERM*);
-bool beamqn_make_bqnv_terminal(ErlNifEnv* env, ERL_NIF_TERM term, BQNV bqnv, ERL_NIF_TERM *err) {
+bool beamqn_make_bqnv_terminal(ErlNifEnv*, ERL_NIF_TERM, BQNV*, ERL_NIF_TERM*);
+bool beamqn_make_bqnv_terminal(ErlNifEnv* env, ERL_NIF_TERM term, BQNV* bqnv, ERL_NIF_TERM *err) {
     switch (enif_term_type(env, term)) {
         case ERL_NIF_TERM_TYPE_ATOM:
             *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_atom);
@@ -391,7 +391,7 @@ bool beamqn_make_bqnv_terminal(ErlNifEnv* env, ERL_NIF_TERM term, BQNV bqnv, ERL
                 return false;
             }
             // https://stackoverflow.com/questions/14746889/casting-from-unsigned-into-signed-char-in-c/14746982#14746982
-            bqnv = bqn_makeUTF8Str(ebin.size, (const char*)ebin.data);
+            *bqnv = bqn_makeUTF8Str(ebin.size, (const char*)ebin.data);
             return true;
             break;
         case ERL_NIF_TERM_TYPE_FLOAT:
@@ -400,7 +400,7 @@ bool beamqn_make_bqnv_terminal(ErlNifEnv* env, ERL_NIF_TERM term, BQNV bqnv, ERL
                 *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_float);
                 return false;
             }
-            bqnv = bqn_makeF64(f64_val);
+            *bqnv = bqn_makeF64(f64_val);
             return true;
             break;
         case ERL_NIF_TERM_TYPE_FUN:
@@ -413,7 +413,7 @@ bool beamqn_make_bqnv_terminal(ErlNifEnv* env, ERL_NIF_TERM term, BQNV bqnv, ERL
                 *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_integer);
                 return false;
             }
-            bqnv = bqn_makeF64((double)i64_val);
+            *bqnv = bqn_makeF64((double)i64_val);
             return true;
             break;
         case ERL_NIF_TERM_TYPE_PID:
@@ -443,7 +443,7 @@ bool beamqn_make_bqnv(ErlNifEnv* env, ERL_NIF_TERM term, BQNV* bqnv, ERL_NIF_TER
         return false;
     }
     else if (!(enif_is_list(env, term) || enif_is_map(env, term) || enif_is_tuple(env, term))) {
-        if (!beamqn_make_bqnv_terminal(env, term, *bqnv, err)) {
+        if (!beamqn_make_bqnv_terminal(env, term, bqnv, err)) {
             return false;
         }
     }
