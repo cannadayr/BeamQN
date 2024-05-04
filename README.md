@@ -21,7 +21,7 @@ The package can be installed by adding `beamqn` to your list of dependencies in 
 
 ```erlang
 {deps, [
-    {rebar, {git, "git://github.com/cannadayr/BeamQN.git", {branch, "main"}}}
+    {beamqn, {git, "https://github.com/cannadayr/BeamQN.git", {branch, "main"}}}
 ]}.
 ```
 
