@@ -41,9 +41,9 @@ ERL_NIF_TERM beamqn_atom_typ_nif_reference;
 ERL_NIF_TERM beamqn_atom_typ_nif_tuple;
 ERL_NIF_TERM beamqn_atom_typ_nif_undef;
 
-ErlNifResourceType *BEAMQN_BQNV;
+ErlNifResourceType *BqnvResource;
 
-static BQNV *beamqn_bqn_safe_eval;
+static BQNV *beamqn_safe_eval;
 
 static ERL_NIF_TERM beamqn_make_atom(ErlNifEnv* env, const char* atom) {
     ERL_NIF_TERM ret;
@@ -79,6 +79,7 @@ bool beamqn_decode_c32(ErlNifEnv *env, size_t len, BQNV *bqnv, ERL_NIF_TERM *ter
     // This is equivalent to <<"↕"/utf32-native>> (Erlang) or <<"↕"::utf32-native>> (Elixir).
     // However, Elixir uses UTF-8 as its default encoding ("↕" == <<"↕"::utf8>>).
     // This currently requires external type conversions.
+    // https://stackoverflow.com/questions/19751382/how-to-use-iconv3-to-convert-wide-string-to-utf-8
     ErlNifBinary ebin;
     if (!enif_alloc_binary(len * sizeof(uint32_t), &ebin)) {
         *err = beamqn_atom_err_oom;
@@ -137,20 +138,20 @@ static int beamqn_init(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
     beamqn_atom_typ_nif_tuple       = beamqn_make_atom(env, "nif_tuple");
     beamqn_atom_typ_nif_undef       = beamqn_make_atom(env, "nif_undef");
 
-    BEAMQN_BQNV = enif_open_resource_type(env, NULL, "BQNV", beamqn_free_bqnv, ERL_NIF_RT_CREATE|ERL_NIF_RT_TAKEOVER, NULL);
+    BqnvResource = enif_open_resource_type(env, NULL, "BQNV", beamqn_free_bqnv, ERL_NIF_RT_CREATE|ERL_NIF_RT_TAKEOVER, NULL);
     bqn_init();
 
     // Throwing and catching errors in CBQN leaks memory!
     // See https://github.com/dzaima/CBQN/#limitations
     // This is currently necessary as crashing the BEAM due to an invalid source input is extremely annoying.
-    beamqn_bqn_safe_eval = enif_alloc(sizeof(BQNV));
-    *beamqn_bqn_safe_eval = bqn_evalCStr("({𝕊:⟨0,•BQN 𝕩⟩}⎊{𝕊:⟨1,•CurrentError@⟩})");
+    beamqn_safe_eval = enif_alloc(sizeof(BQNV));
+    *beamqn_safe_eval = bqn_evalCStr("({𝕊:⟨0,•BQN 𝕩⟩}⎊{𝕊:⟨1,•CurrentError@⟩})");
 
     return 0;
 }
 
 static void beamqn_unload(ErlNifEnv* env, void* priv_data) {
-    enif_free(beamqn_bqn_safe_eval);
+    enif_free(beamqn_safe_eval);
 }
 
 typedef struct BqnCallOpt { bool tsdiff; } BqnCallOpt;
@@ -158,7 +159,7 @@ typedef struct BqnCallOpt { bool tsdiff; } BqnCallOpt;
 #define BQN_CALL_OPT_S 7 // the maximum identifier size + 1
 typedef struct BqnCallStat { size_t count; ERL_NIF_TERM keys[BQN_CALL_OPT_N]; ERL_NIF_TERM values[BQN_CALL_OPT_N]; } BqnCallStat;
 
-static ERL_NIF_TERM beamqn_bqn_call(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
+static ERL_NIF_TERM beamqn_call(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
 
     BqnCallOpt call_opt;
     BqnCallStat stat;
@@ -218,28 +219,28 @@ static ERL_NIF_TERM beamqn_bqn_call(ErlNifEnv* env, int argc, const ERL_NIF_TERM
         }
     }
 
-    if (!enif_get_resource(env, argv[0], BEAMQN_BQNV, (void**) &prog)) {
+    if (!enif_get_resource(env, argv[0], BqnvResource, (void**) &prog)) {
         return enif_make_badarg(env);
     }
     if (3 != bqn_type(*prog)) { // not a function
         return enif_make_badarg(env);
     }
-    bqnv = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
+    bqnv = enif_alloc_resource(BqnvResource, sizeof(BQNV));
     if (enif_is_tuple(env,arg)) { // call2
         enif_get_tuple(env, arg, &arg_arity, &arg_cur);
         if (arg_arity != 2) {
             return enif_make_badarg(env);
         }
-        if (!enif_get_resource(env, arg_cur[0], BEAMQN_BQNV, (void**) &x)) {
+        if (!enif_get_resource(env, arg_cur[0], BqnvResource, (void**) &x)) {
             return enif_make_badarg(env);
         }
-        if (!enif_get_resource(env, arg_cur[1], BEAMQN_BQNV, (void**) &w)) {
+        if (!enif_get_resource(env, arg_cur[1], BqnvResource, (void**) &w)) {
             return enif_make_badarg(env);
         }
         *bqnv = bqn_call2(*prog, *x, *w);
     }
     else { // call1
-        if (!enif_get_resource(env, argv[1], BEAMQN_BQNV, (void**) &x)) {
+        if (!enif_get_resource(env, argv[1], BqnvResource, (void**) &x)) {
             return enif_make_badarg(env);
         }
         *bqnv = bqn_call1(*prog, *x);
@@ -273,7 +274,7 @@ typedef struct BqnEvalOpt { bool tsdiff; } BqnEvalOpt;
 #define BQN_EVAL_OPT_S 7 // the maximum identifier size + 1
 typedef struct BqnEvalStat { size_t count; ERL_NIF_TERM keys[BQN_EVAL_OPT_N]; ERL_NIF_TERM values[BQN_EVAL_OPT_N]; } BqnEvalStat;
 
-static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
+static ERL_NIF_TERM beamqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
 
     BqnEvalOpt eval_opt;
     BqnEvalStat stat;
@@ -335,8 +336,12 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
         return enif_make_badarg(env);
     }
 
-    prog = bqn_call1(*beamqn_bqn_safe_eval, bqn_makeUTF8Str(x.size, (const char*)x.data));
+    prog = bqn_call1(*beamqn_safe_eval, bqn_makeUTF8Str(x.size, (const char*)x.data));
 
+    // There are dangers in casting to integers in C.
+    // This seems safe since we are guaranteeing 0 or 1 returned from beamqn_safe_eval.
+    // That may not be true with different compilers or compiler versions.
+    // See https://www.cs.cmu.edu/~rbd/papers/cmj-float-to-int.html
     if (1 == (int)bqn_toF64(bqn_pick(prog,0))) {
         bqn_err = bqn_pick(prog,1);
         if (0 != bqn_type(bqn_err)) { // not an array
@@ -356,7 +361,7 @@ static ERL_NIF_TERM beamqn_bqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM
         }
     }
     else {
-        func = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
+        func = enif_alloc_resource(BqnvResource, sizeof(BQNV));
         *func = bqn_pick(prog,1);
 
         if (3 != bqn_type(*func)) { // not a function
@@ -486,7 +491,7 @@ typedef struct BqnMakeOpt { bool tsdiff; } BqnMakeOpt;
 #define BQN_MAKE_OPT_S 7 // the maximum identifier size + 1
 typedef struct BqnMakeStat { size_t count; ERL_NIF_TERM keys[BQN_MAKE_OPT_N]; ERL_NIF_TERM values[BQN_MAKE_OPT_N]; } BqnMakeStat;
 
-static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
+static ERL_NIF_TERM beamqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
 
     BqnMakeOpt make_opt;
     BqnMakeStat stat;
@@ -542,7 +547,7 @@ static ERL_NIF_TERM beamqn_bqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM
     BQNV *bqnv;
     ERL_NIF_TERM err, resource;
 
-    bqnv = enif_alloc_resource(BEAMQN_BQNV, sizeof(BQNV));
+    bqnv = enif_alloc_resource(BqnvResource, sizeof(BQNV));
     if (!beamqn_make_bqnv(env, argv[0], bqnv, &err)) {
         return enif_raise_exception(env, err);
     }
@@ -703,7 +708,7 @@ typedef struct BqnReadOpt { bool tsdiff; } BqnReadOpt;
 #define BQN_READ_OPT_S 7 // the maximum identifier size + 1
 typedef struct BqnReadStat { size_t count; ERL_NIF_TERM keys[BQN_READ_OPT_N]; ERL_NIF_TERM values[BQN_READ_OPT_N]; } BqnReadStat;
 
-static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
+static ERL_NIF_TERM beamqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
     BQNV *bqnv;
     ERL_NIF_TERM term, err;
     BqnReadOpt read_opt;
@@ -757,7 +762,7 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
         }
     }
 
-    if (!enif_get_resource(env, argv[0], BEAMQN_BQNV, (void**) &bqnv)) {
+    if (!enif_get_resource(env, argv[0], BqnvResource, (void**) &bqnv)) {
         return enif_make_badarg(env);
     }
 
@@ -787,14 +792,14 @@ static ERL_NIF_TERM beamqn_bqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 }
 
 static ErlNifFunc nif_funcs[] = {
-    {"call", 2, beamqn_bqn_call, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"call", 3, beamqn_bqn_call, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"eval", 1, beamqn_bqn_eval, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"eval", 2, beamqn_bqn_eval, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"make", 1, beamqn_bqn_make, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"make", 2, beamqn_bqn_make, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"read", 1, beamqn_bqn_read, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"read", 2, beamqn_bqn_read, ERL_NIF_DIRTY_JOB_CPU_BOUND}
+    {"call", 2, beamqn_call, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"call", 3, beamqn_call, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"eval", 1, beamqn_eval, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"eval", 2, beamqn_eval, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"make", 1, beamqn_make, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"make", 2, beamqn_make, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"read", 1, beamqn_read, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"read", 2, beamqn_read, ERL_NIF_DIRTY_JOB_CPU_BOUND}
 };
 
 ERL_NIF_INIT(beamqn, nif_funcs, &beamqn_init, NULL, NULL, &beamqn_unload)
