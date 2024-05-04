@@ -2,8 +2,7 @@
 
 An experiment in linking [CBQN](https://github.com/dzaima/CBQN) into the Erlang BEAM as a NIF. 
 
-Build (Development)
------
+### Build (Development)
 
 1. Download and extract the latest Erlang/OTP release tarball from the [downloads page](https://www.erlang.org/downloads).
 2. Export `$ERL_TOP` to the path of the extracted source.
@@ -11,47 +10,44 @@ Build (Development)
 4. [Build the debug enabled runtime system.](https://www.erlang.org/doc/installation_guide/install#Advanced-configuration-and-build-of-ErlangOTP_Building_How-to-Build-a-Debug-Enabled-Erlang-RunTime-System)
 5. Using the compiled runtime for development:
 
-   ##### Debug
+   #### Debug
    
-       $ PATH="$ERL_TOP/bin:$PATH" rebar3 clean   
        $ PATH="$ERL_TOP/bin:$PATH" rebar3 compile
-       $ PATH="$ERL_TOP/bin:$PATH" cerl -debug -pa ebin -pa ./_build/default/lib/*/ebin
-       1> beamqn_test:beamqn_bqn_makeF64_tests().
+       $ PATH="$ERL_TOP/bin:$PATH" cerl -debug +pc unicode -pa ebin -pa ./_build/default/lib/*/ebin
 
-   ##### ASAN
+### Installation (Erlang)
 
-       $ export ASAN_OPTIONS="log_path=log/asan.log"
-       $ export LSAN_OPTIONS="suppressions=$ERL_TOP/erts/emulator/asan/suppress"
-       $ PATH="$ERL_TOP/bin:$PATH" rebar3 clean   
-       $ PATH="$ERL_TOP/bin:$PATH" CFLAGS="-fsanitize=address -fno-common -fno-omit-frame-pointer" rebar3 compile
-       $ PATH="$ERL_TOP/bin:$PATH" cerl -asan -pa ebin -pa ./_build/default/lib/*/ebin
+The package can be installed by adding `beamqn` to your list of dependencies in `rebar.config`:
 
-   ##### Valgrind
+```erlang
+{deps, [
+    {rebar, {git, "git://github.com/cannadayr/BeamQN.git", {branch, "main"}}}
+]}.
+```
 
-       $ export VALGRIND_LOG_DIR=log
-       $ PATH="$ERL_TOP/bin:$PATH" rebar3 clean   
-       $ PATH="$ERL_TOP/bin:$PATH" rebar3 compile
-       $ PATH="$ERL_TOP/bin:$PATH" cerl -valgrind -pa ebin -pa ./_build/default/lib/*/ebin
-   
-Build
------
+### Installation (Elixir)
 
-    $ rebar3 compile
-
-Installation (Elixir)
----------------------
-
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `beamqn` to your list of dependencies in `mix.exs`:
+The package can be installed by adding `beamqn` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:beamqn, "~> 0.1.0"}
+    {:beamqn, git: "https://github.com/cannadayr/BeamQN.git", branch: "main"}
   ]
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/beamqn>.
+### Documentation
+
+Documentation can be generated with [EDoc](https://www.erlang.org/doc/man/edoc).
+```
+rebar3 edoc
+```
+Once generated, the docs can be found at `/doc/`.
+
+### Testing
+
+Tests can be ran with [EUnit](https://www.erlang.org/doc/apps/eunit/).
+```
+rebar3 eunit
+```
