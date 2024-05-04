@@ -355,8 +355,8 @@ static ERL_NIF_TERM beamqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
     // That may not be true with different compilers or compiler versions.
     // See https://www.cs.cmu.edu/~rbd/papers/cmj-float-to-int.html
     if (1 == (int)bqn_toF64(bqn_pick(prog,0))) {
-        size_t len = bqn_bound(bqn_err);
         bqn_err = bqn_pick(prog,1);
+        size_t len = bqn_bound(bqn_err);
         if (0 != bqn_type(bqn_err)) { // not an array
             return enif_make_badarg(env);
         }
