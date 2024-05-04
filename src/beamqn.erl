@@ -27,19 +27,35 @@ init() ->
     end,
     erlang:load_nif(SoName, 0).
 
-call(_N,_X) ->
+-spec call(F :: reference(), X :: reference() | {reference(), reference()}) -> {atom(), reference()}.
+%% @doc Invoke BQN function; F is a reference to a BQN function; X is either a reference or a two-tuple of references.
+call(_F,_X) ->
     not_loaded(?LINE).
-call(_N,_X,_OPT) ->
+-spec call(F :: reference(), X :: reference() | {reference(), reference()}, OPT :: [] | [{atom(), atom()}]) -> {atom(), reference()}.
+%% @doc Invoke BQN function; F is a reference to a BQN function; X is either a reference or a two-tuple of references; OPT is a list of options.
+call(_F,_X,_OPT) ->
     not_loaded(?LINE).
-eval(_N) ->
+-spec eval(S :: bitstring()) -> {atom(), reference()}.
+%% @doc Evaluate BQN code in a fresh environment; S is a utf8 encoded bitstring.
+eval(_S) ->
     not_loaded(?LINE).
-eval(_N,_OPT) ->
+-spec eval(S :: bitstring(), OPT :: [] | [{atom(), atom()}]) -> {atom(), reference()}.
+%% @doc Evaluate BQN code in a fresh environment; S is a utf8 encoded bitstring; OPT is a list of options.
+eval(_S,_OPT) ->
     not_loaded(?LINE).
-make(_N) ->
+-spec make(X :: integer() | float() | [] | [integer()] | [float()]) -> {atom(), reference()}.
+%% @doc Create new BQN objects.
+make(_X) ->
     not_loaded(?LINE).
-make(_N,_OPT) ->
+-spec make(X :: integer() | float() | [] | [integer()] | [float()], OPT :: [] | [{atom(), atom()}]) -> {atom(), reference()}.
+%% @doc Create new BQN objects; OPT is a list of options.
+make(_X,_OPT) ->
     not_loaded(?LINE).
-read(_N) ->
+-spec read(R :: reference()) -> {atom(), integer() | float() | [] | [integer()] | [float()]}.
+%% @doc Read BQN objects; R is a reference to a BQN object.
+read(_R) ->
     not_loaded(?LINE).
+-spec read(N :: reference(), OPT :: [] | [{atom(), atom()}]) -> {atom(), integer() | float() | [] | [integer()] | [float()]}.
+%% @doc Read BQN objects; R is a reference to a BQN object; OPT is a list of options.
 read(_N,_OPT) ->
     not_loaded(?LINE).
