@@ -73,6 +73,18 @@ bool beamqn_opt_get_bool(ErlNifEnv* env, ERL_NIF_TERM atom, bool* opt) {
     return true;
 }
 
+bool beamqn_decode_c8(ErlNifEnv*, size_t, BQNV*, ERL_NIF_TERM*, ERL_NIF_TERM*);
+bool beamqn_decode_c8(ErlNifEnv *env, size_t len, BQNV *bqnv, ERL_NIF_TERM *term, ERL_NIF_TERM *err) {
+    ErlNifBinary ebin;
+    if (!enif_alloc_binary(len * sizeof(uint8_t), &ebin)) {
+        *err = beamqn_atom_err_oom;
+        return false;
+    }
+    bqn_readC8Arr(*bqnv, ebin.data);
+    *term = enif_make_binary(env, &ebin);
+    return true;
+}
+
 bool beamqn_decode_c32(ErlNifEnv*, size_t, BQNV*, ERL_NIF_TERM*, ERL_NIF_TERM*);
 bool beamqn_decode_c32(ErlNifEnv *env, size_t len, BQNV *bqnv, ERL_NIF_TERM *term, ERL_NIF_TERM *err) {
     // CBQN treats characters as unsigned 32 bit integers.
@@ -343,13 +355,19 @@ static ERL_NIF_TERM beamqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
     // That may not be true with different compilers or compiler versions.
     // See https://www.cs.cmu.edu/~rbd/papers/cmj-float-to-int.html
     if (1 == (int)bqn_toF64(bqn_pick(prog,0))) {
+        size_t len = bqn_bound(bqn_err);
         bqn_err = bqn_pick(prog,1);
         if (0 != bqn_type(bqn_err)) { // not an array
             return enif_make_badarg(env);
         }
         switch (bqn_directArrType(bqn_err)) {
+            case elt_c8:
+                if (!beamqn_decode_c8(env, len, &bqn_err, &term, &err)) {
+                    return enif_raise_exception(env, err);
+                }
+                atom = beamqn_atom_core_err;
+                break;
             case elt_c32:
-                size_t len = bqn_bound(bqn_err);
                 if (!beamqn_decode_c32(env, len, &bqn_err, &term, &err)) {
                     return enif_raise_exception(env, err);
                 }
@@ -629,13 +647,12 @@ bool beamqn_read_bqnv_elt_terminal(ErlNifEnv *env, BQNElType elt_type, size_t le
             return false;
             break;
         case elt_c8:
-            if (!enif_alloc_binary(len * sizeof(uint8_t), &elt_buf.b.bin)) {
-                *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_elt_c8);
+            if (!beamqn_decode_c8(env, len, bqnv, term, err)) {
                 return false;
             }
-            bqn_readC8Arr(*bqnv, elt_buf.b.bin.data);
-            *term = enif_make_binary(env, &elt_buf.b.bin);
-            return true;
+            else {
+                return true;
+            }
             break;
         case elt_c16:
             *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_elt_c16);
