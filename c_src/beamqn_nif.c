@@ -44,6 +44,7 @@ ERL_NIF_TERM beamqn_atom_typ_nif_undef;
 ErlNifResourceType *BqnvResource;
 
 static BQNV *beamqn_safe_eval;
+static BQNV *beamqn_to_utf8;
 
 static ERL_NIF_TERM beamqn_make_atom(ErlNifEnv* env, const char* atom) {
     ERL_NIF_TERM ret;
@@ -90,15 +91,19 @@ bool beamqn_decode_c32(ErlNifEnv *env, size_t len, BQNV *bqnv, ERL_NIF_TERM *ter
     // CBQN treats characters as unsigned 32 bit integers.
     // This is equivalent to <<"↕"/utf32-native>> (Erlang) or <<"↕"::utf32-native>> (Elixir).
     // However, Elixir uses UTF-8 as its default encoding ("↕" == <<"↕"::utf8>>).
-    // This currently requires external type conversions.
-    // https://stackoverflow.com/questions/19751382/how-to-use-iconv3-to-convert-wide-string-to-utf-8
-    ErlNifBinary ebin;
-    if (!enif_alloc_binary(len * sizeof(uint32_t), &ebin)) {
-        *err = beamqn_atom_err_oom;
+    // Use the CBQN builtin •ToUTF8 for convenience.
+    // https://github.com/dzaima/CBQN/blob/master/docs/system.md#toutf8
+    // `len` is currently unused due to variable length unicode encoding,
+    // but it might might be necessary depending on how we handle type specs.
+    BQNV str = bqn_call1(*beamqn_to_utf8, *bqnv);
+    if (5 != bqn_directArrType(str)) { // must be an array of c8
         return false;
     }
-    bqn_readC32Arr(*bqnv, (uint32_t *) ebin.data);
-    *term = enif_make_binary(env, &ebin);
+
+    if (!beamqn_decode_c8(env, bqn_bound(str), &str, term, err)) {
+        return false;
+    }
+
     return true;
 }
 
@@ -158,6 +163,9 @@ static int beamqn_init(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
     // This is currently necessary as crashing the BEAM due to an invalid source input is extremely annoying.
     beamqn_safe_eval = enif_alloc(sizeof(BQNV));
     *beamqn_safe_eval = bqn_evalCStr("({𝕊:⟨0,•BQN 𝕩⟩}⎊{𝕊:⟨1,•CurrentError@⟩})");
+
+    beamqn_to_utf8 = enif_alloc(sizeof(BQNV));
+    *beamqn_to_utf8 = bqn_evalCStr("•ToUTF8");
 
     return 0;
 }
