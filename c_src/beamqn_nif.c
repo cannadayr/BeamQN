@@ -190,7 +190,7 @@ static ERL_NIF_TERM beamqn_call(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
             return enif_make_badarg(env);
         }
 
-        while (enif_get_list_cell(env, opt, &opt_hd, (ERL_NIF_TERM*) &opt)) {
+        while (enif_get_list_cell(env, opt, &opt_hd, &opt)) {
             if (!enif_get_tuple(env, opt_hd, &opt_arity, &opt_cur)) {
                 return enif_make_badarg(env);
             }
@@ -303,7 +303,7 @@ static ERL_NIF_TERM beamqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
             return enif_make_badarg(env);
         }
 
-        while (enif_get_list_cell(env, opt, &opt_hd, (ERL_NIF_TERM*) &opt)) {
+        while (enif_get_list_cell(env, opt, &opt_hd, &opt)) {
             if (!enif_get_tuple(env, opt_hd, &opt_arity, &opt_cur)) {
                 return enif_make_badarg(env);
             }
@@ -471,7 +471,7 @@ bool beamqn_make_bqnv(ErlNifEnv* env, ERL_NIF_TERM term, BQNV* bqnv, ERL_NIF_TER
         }
         else {
             ERL_NIF_TERM hd;
-            for (int i = 0; enif_get_list_cell(env, term, &hd, (ERL_NIF_TERM*) &term); i++) {
+            for (int i = 0; enif_get_list_cell(env, term, &hd, &term); i++) {
                 // This is not tail call optimized, and vulnerable to stack overflows!
                 beamqn_make_bqnv(env, hd, &arr[i], err);
             }
@@ -515,7 +515,7 @@ static ERL_NIF_TERM beamqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
             return enif_make_badarg(env);
         }
 
-        while (enif_get_list_cell(env, opt, &opt_hd, (ERL_NIF_TERM*) &opt)) {
+        while (enif_get_list_cell(env, opt, &opt_hd, &opt)) {
             if (!enif_get_tuple(env, opt_hd, &opt_arity, &opt_cur)) {
                 return enif_make_badarg(env);
             }
@@ -728,7 +728,7 @@ static ERL_NIF_TERM beamqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
             return enif_make_badarg(env);
         }
 
-        while (enif_get_list_cell(env, opt, &opt_hd, (ERL_NIF_TERM*) &opt)) {
+        while (enif_get_list_cell(env, opt, &opt_hd, &opt)) {
             if (!enif_get_tuple(env, opt_hd, &opt_arity, &opt_cur)) {
                 return enif_make_badarg(env);
             }
