@@ -190,7 +190,7 @@ static ERL_NIF_TERM beamqn_call(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
             return enif_make_badarg(env);
         }
 
-        for (int i = 0; enif_get_list_cell(env, opt, &opt_hd, (ERL_NIF_TERM*) &opt); i++) {
+        while (enif_get_list_cell(env, opt, &opt_hd, (ERL_NIF_TERM*) &opt)) {
             if (!enif_get_tuple(env, opt_hd, &opt_arity, &opt_cur)) {
                 return enif_make_badarg(env);
             }
@@ -303,7 +303,7 @@ static ERL_NIF_TERM beamqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
             return enif_make_badarg(env);
         }
 
-        for (int i = 0; enif_get_list_cell(env, opt, &opt_hd, (ERL_NIF_TERM*) &opt); i++) {
+        while (enif_get_list_cell(env, opt, &opt_hd, (ERL_NIF_TERM*) &opt)) {
             if (!enif_get_tuple(env, opt_hd, &opt_arity, &opt_cur)) {
                 return enif_make_badarg(env);
             }
@@ -515,7 +515,7 @@ static ERL_NIF_TERM beamqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
             return enif_make_badarg(env);
         }
 
-        for (int i = 0; enif_get_list_cell(env, opt, &opt_hd, (ERL_NIF_TERM*) &opt); i++) {
+        while (enif_get_list_cell(env, opt, &opt_hd, (ERL_NIF_TERM*) &opt)) {
             if (!enif_get_tuple(env, opt_hd, &opt_arity, &opt_cur)) {
                 return enif_make_badarg(env);
             }
@@ -728,7 +728,7 @@ static ERL_NIF_TERM beamqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
             return enif_make_badarg(env);
         }
 
-        for (int i = 0; enif_get_list_cell(env, opt, &opt_hd, (ERL_NIF_TERM*) &opt); i++) {
+        while (enif_get_list_cell(env, opt, &opt_hd, (ERL_NIF_TERM*) &opt)) {
             if (!enif_get_tuple(env, opt_hd, &opt_arity, &opt_cur)) {
                 return enif_make_badarg(env);
             }
