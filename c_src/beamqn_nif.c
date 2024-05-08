@@ -44,7 +44,6 @@ ERL_NIF_TERM beamqn_atom_typ_nif_undef;
 ErlNifResourceType *BqnvResource;
 
 static BQNV *beamqn_safe_eval;
-static BQNV *beamqn_to_utf8;
 
 static ERL_NIF_TERM beamqn_make_atom(ErlNifEnv* env, const char* atom) {
     ERL_NIF_TERM ret;
@@ -83,27 +82,6 @@ bool beamqn_decode_c8(ErlNifEnv *env, size_t len, BQNV *bqnv, ERL_NIF_TERM *term
     }
     bqn_readC8Arr(*bqnv, ebin.data);
     *term = enif_make_binary(env, &ebin);
-    return true;
-}
-
-bool beamqn_decode_c32(ErlNifEnv*, size_t, BQNV*, ERL_NIF_TERM*, ERL_NIF_TERM*);
-bool beamqn_decode_c32(ErlNifEnv *env, size_t len, BQNV *bqnv, ERL_NIF_TERM *term, ERL_NIF_TERM *err) {
-    // CBQN treats characters as unsigned 32 bit integers.
-    // This is equivalent to <<"↕"/utf32-native>> (Erlang) or <<"↕"::utf32-native>> (Elixir).
-    // However, Elixir uses UTF-8 as its default encoding ("↕" == <<"↕"::utf8>>).
-    // Use the CBQN builtin •ToUTF8 for convenience.
-    // https://github.com/dzaima/CBQN/blob/master/docs/system.md#toutf8
-    // `len` is currently unused due to variable length unicode encoding,
-    // but it might might be necessary depending on how we handle type specs.
-    BQNV str = bqn_call1(*beamqn_to_utf8, *bqnv);
-    if (5 != bqn_directArrType(str)) { // must be an array of c8
-        return false;
-    }
-
-    if (!beamqn_decode_c8(env, bqn_bound(str), &str, term, err)) {
-        return false;
-    }
-
     return true;
 }
 
@@ -162,10 +140,7 @@ static int beamqn_init(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
     // See https://github.com/dzaima/CBQN/#limitations
     // This is currently necessary as crashing the BEAM due to an invalid source input is extremely annoying.
     beamqn_safe_eval = enif_alloc(sizeof(BQNV));
-    *beamqn_safe_eval = bqn_evalCStr("({𝕊:⟨0,•BQN 𝕩⟩}⎊{𝕊:⟨1,•CurrentError@⟩})");
-
-    beamqn_to_utf8 = enif_alloc(sizeof(BQNV));
-    *beamqn_to_utf8 = bqn_evalCStr("•ToUTF8");
+    *beamqn_safe_eval = bqn_evalCStr("({𝕊:⟨0,•BQN 𝕩⟩}⎊{𝕊:⟨1,•ToUTF8 •CurrentError@⟩})");
 
     return 0;
 }
@@ -371,12 +346,6 @@ static ERL_NIF_TERM beamqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
         switch (bqn_directArrType(bqn_err)) {
             case elt_c8:
                 if (!beamqn_decode_c8(env, len, &bqn_err, &term, &err)) {
-                    return enif_raise_exception(env, err);
-                }
-                atom = beamqn_atom_core_err;
-                break;
-            case elt_c32:
-                if (!beamqn_decode_c32(env, len, &bqn_err, &term, &err)) {
                     return enif_raise_exception(env, err);
                 }
                 atom = beamqn_atom_core_err;
@@ -667,12 +636,8 @@ bool beamqn_read_bqnv_elt_terminal(ErlNifEnv *env, BQNElType elt_type, size_t le
             return false;
             break;
         case elt_c32:
-            if (!beamqn_decode_c32(env, len, bqnv, term, err)) {
-                return false;
-            }
-            else {
-                return true;
-            }
+            *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_elt_c32);
+            return false;
             break;
         default:
             *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_elt_undef);
