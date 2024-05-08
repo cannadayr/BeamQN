@@ -66,6 +66,23 @@ bool beamqn_is_opt_list(ErlNifEnv *env, ERL_NIF_TERM opt, unsigned *opt_len) {
     return true;
 }
 
+bool beamqn_get_opt_tuple(ErlNifEnv*, ERL_NIF_TERM, int*, const ERL_NIF_TERM**, char *, unsigned);
+bool beamqn_get_opt_tuple(ErlNifEnv *env, ERL_NIF_TERM opt_hd, int *opt_arity, const ERL_NIF_TERM **opt_cur, char *buf, unsigned buf_len) {
+    if (!enif_get_tuple(env, opt_hd, opt_arity, opt_cur)) {
+        return false;
+    }
+    if (*opt_arity != 2) {
+        return false;
+    }
+    if (!enif_is_atom(env, *opt_cur[0])) {
+        return false;
+    }
+    if (!enif_get_atom(env, *opt_cur[0], buf, buf_len, ERL_NIF_LATIN1)) {
+        return false;
+    }
+    return true;
+}
+
 bool beamqn_get_opt_bool(ErlNifEnv*, ERL_NIF_TERM, bool*);
 bool beamqn_get_opt_bool(ErlNifEnv *env, ERL_NIF_TERM atom, bool *opt) {
     char buf[6]; // max char length of false + 1
@@ -199,25 +216,18 @@ static ERL_NIF_TERM beamqn_call(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
         }
 
         while (enif_get_list_cell(env, opt, &opt_hd, &opt)) {
-            if (!enif_get_tuple(env, opt_hd, &opt_arity, &opt_cur)) {
+            if (!beamqn_get_opt_tuple(env, opt_hd, &opt_arity, &opt_cur, buf, BQN_CALL_OPT_S)) {
                 return enif_make_badarg(env);
-            }
-            if (opt_arity != 2) {
-                return enif_make_badarg(env);
-            }
-            if (!enif_is_atom(env, opt_cur[0])) {
-                return enif_make_badarg(env);
-            }
-            if (!enif_get_atom(env, opt_cur[0], buf, BQN_CALL_OPT_S, ERL_NIF_LATIN1)) {
-                return enif_make_badarg(env);
-            }
-            if (strcmp(buf, "tsdiff") == 0) {
-                if (!beamqn_get_opt_bool(env, opt_cur[1], &call_opt.tsdiff)) {
-                    return enif_make_badarg(env);
-                }
             }
             else {
-                return enif_make_badarg(env);
+                if (strcmp(buf, "tsdiff") == 0) {
+                    if (!beamqn_get_opt_bool(env, opt_cur[1], &call_opt.tsdiff)) {
+                        return enif_make_badarg(env);
+                    }
+                }
+                else {
+                    return enif_make_badarg(env);
+                }
             }
         }
     }
@@ -309,25 +319,18 @@ static ERL_NIF_TERM beamqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
         }
 
         while (enif_get_list_cell(env, opt, &opt_hd, &opt)) {
-            if (!enif_get_tuple(env, opt_hd, &opt_arity, &opt_cur)) {
+            if (!beamqn_get_opt_tuple(env, opt_hd, &opt_arity, &opt_cur, buf, BQN_EVAL_OPT_S)) {
                 return enif_make_badarg(env);
-            }
-            if (opt_arity != 2) {
-                return enif_make_badarg(env);
-            }
-            if (!enif_is_atom(env, opt_cur[0])) {
-                return enif_make_badarg(env);
-            }
-            if (!enif_get_atom(env, opt_cur[0], buf, BQN_EVAL_OPT_S, ERL_NIF_LATIN1)) {
-                return enif_make_badarg(env);
-            }
-            if (strcmp(buf, "tsdiff") == 0) {
-                if (!beamqn_get_opt_bool(env, opt_cur[1], &eval_opt.tsdiff)) {
-                    return enif_make_badarg(env);
-                }
             }
             else {
-                return enif_make_badarg(env);
+                if (strcmp(buf, "tsdiff") == 0) {
+                    if (!beamqn_get_opt_bool(env, opt_cur[1], &eval_opt.tsdiff)) {
+                        return enif_make_badarg(env);
+                    }
+                }
+                else {
+                    return enif_make_badarg(env);
+                }
             }
         }
     }
@@ -518,25 +521,18 @@ static ERL_NIF_TERM beamqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
         }
 
         while (enif_get_list_cell(env, opt, &opt_hd, &opt)) {
-            if (!enif_get_tuple(env, opt_hd, &opt_arity, &opt_cur)) {
+            if (!beamqn_get_opt_tuple(env, opt_hd, &opt_arity, &opt_cur, buf, BQN_MAKE_OPT_S)) {
                 return enif_make_badarg(env);
-            }
-            if (opt_arity != 2) {
-                return enif_make_badarg(env);
-            }
-            if(!enif_is_atom(env, opt_cur[0])) {
-                return enif_make_badarg(env);
-            }
-            if (!enif_get_atom(env, opt_cur[0], buf, BQN_MAKE_OPT_S, ERL_NIF_LATIN1)) {
-                return enif_make_badarg(env);
-            }
-            if (strcmp(buf, "tsdiff") == 0) {
-                if (!beamqn_get_opt_bool(env, opt_cur[1], &make_opt.tsdiff)) {
-                    return enif_make_badarg(env);
-                }
             }
             else {
-                return enif_make_badarg(env);
+                if (strcmp(buf, "tsdiff") == 0) {
+                    if (!beamqn_get_opt_bool(env, opt_cur[1], &make_opt.tsdiff)) {
+                        return enif_make_badarg(env);
+                    }
+                }
+                else {
+                    return enif_make_badarg(env);
+                }
             }
         }
     }
@@ -728,25 +724,18 @@ static ERL_NIF_TERM beamqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
         }
 
         while (enif_get_list_cell(env, opt, &opt_hd, &opt)) {
-            if (!enif_get_tuple(env, opt_hd, &opt_arity, &opt_cur)) {
+            if (!beamqn_get_opt_tuple(env, opt_hd, &opt_arity, &opt_cur, buf, BQN_READ_OPT_S)) {
                 return enif_make_badarg(env);
-            }
-            if (opt_arity != 2) {
-                return enif_make_badarg(env);
-            }
-            if (!enif_is_atom(env, opt_cur[0])) {
-                return enif_make_badarg(env);
-            }
-            if (!enif_get_atom(env, opt_cur[0], buf, BQN_READ_OPT_S, ERL_NIF_LATIN1)) {
-                return enif_make_badarg(env);
-            }
-            if (strcmp(buf, "tsdiff") == 0) {
-                if (!beamqn_get_opt_bool(env, opt_cur[1], &read_opt.tsdiff)) {
-                    return enif_make_badarg(env);
-                }
             }
             else {
-                return enif_make_badarg(env);
+                if (strcmp(buf, "tsdiff") == 0) {
+                    if (!beamqn_get_opt_bool(env, opt_cur[1], &read_opt.tsdiff)) {
+                        return enif_make_badarg(env);
+                    }
+                }
+                else {
+                    return enif_make_badarg(env);
+                }
             }
         }
     }
