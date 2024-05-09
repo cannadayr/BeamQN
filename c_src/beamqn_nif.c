@@ -113,6 +113,24 @@ bool beamqn_decode_c8(ErlNifEnv *env, size_t len, BQNV *bqnv, ERL_NIF_TERM *term
     return true;
 }
 
+bool beamqn_decode_f64(ErlNifEnv*, size_t, BQNV*, ERL_NIF_TERM*);
+bool beamqn_decode_f64(ErlNifEnv *env, size_t len, BQNV *bqnv, ERL_NIF_TERM *term) {
+            ERL_NIF_TERM *ebuf;
+            double *cbuf = enif_alloc(len * sizeof(double));
+            bqn_readF64Arr(*bqnv, cbuf);
+
+            ebuf = enif_alloc(len * sizeof(ERL_NIF_TERM));
+            for (size_t i = 0; i < len; i++) {
+                ebuf[i] = enif_make_double(env, cbuf[i]);
+            }
+
+            *term = enif_make_list_from_array(env, ebuf, len);
+
+            enif_free(cbuf);
+            enif_free(ebuf);
+            return true;
+}
+
 static void beamqn_free_bqnv(ErlNifEnv* env, void* ptr) {
     BQNV *x = (BQNV*) ptr;
     // CBQN uses its own memory management system (see CBQN/src/opt/) and reads past the end
@@ -583,25 +601,14 @@ bool beamqn_read_bqnv_terminal(ErlNifEnv* env, enum BQNV_TYPE bqnv_type, BQNV* b
 
 bool beamqn_read_bqnv_elt_terminal(ErlNifEnv*, BQNElType, size_t, BQNV*, ERL_NIF_TERM*, ERL_NIF_TERM*);
 bool beamqn_read_bqnv_elt_terminal(ErlNifEnv *env, BQNElType elt_type, size_t len, BQNV* bqnv, ERL_NIF_TERM *term, ERL_NIF_TERM *err) {
-    struct EltBuf {
-        union { double *f64; ErlNifBinary bin; } b;
-    } elt_buf;
     switch (elt_type) {
         case elt_f64:
-            ERL_NIF_TERM *ebuf;
-            elt_buf.b.f64 = enif_alloc(len * sizeof(double));
-            bqn_readF64Arr(*bqnv, elt_buf.b.f64);
-
-            ebuf = enif_alloc(len * sizeof(ERL_NIF_TERM));
-            for (int i = 0; i < len; i++) {
-                ebuf[i] = enif_make_double(env, elt_buf.b.f64[i]);
+            if (!beamqn_decode_f64(env, len, bqnv, term)) {
+                return false;
             }
-
-            *term = enif_make_list_from_array(env, ebuf, len);
-
-            enif_free(elt_buf.b.f64);
-            enif_free(ebuf);
-            return true;
+            else {
+                return true;
+            }
             break;
         case elt_i8:
             *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_elt_i8);
