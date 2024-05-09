@@ -308,7 +308,7 @@ static ERL_NIF_TERM beamqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
         const ERL_NIF_TERM *opt_cur;
         int opt_arity;
         unsigned opt_len;
-        char buf[BQN_CALL_OPT_S];
+        char buf[BQN_EVAL_OPT_S];
 
         if (!beamqn_is_opt_list(env, opt, &opt_len)) {
             return enif_make_badarg(env);
@@ -508,7 +508,7 @@ static ERL_NIF_TERM beamqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
         const ERL_NIF_TERM *opt_cur;
         int opt_arity;
         unsigned opt_len;
-        char buf[BQN_CALL_OPT_S];
+        char buf[BQN_MAKE_OPT_S];
 
         if (!beamqn_is_opt_list(env, opt, &opt_len)) {
             return enif_make_badarg(env);
@@ -709,7 +709,7 @@ static ERL_NIF_TERM beamqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
         const ERL_NIF_TERM *opt_cur;
         int opt_arity;
         unsigned opt_len;
-        char buf[BQN_CALL_OPT_S];
+        char buf[BQN_READ_OPT_S];
 
         if (!beamqn_is_opt_list(env, opt, &opt_len)) {
             return enif_make_badarg(env);
