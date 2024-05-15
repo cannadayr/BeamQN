@@ -416,44 +416,74 @@ static ERL_NIF_TERM beamqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
     }
 }
 
+bool beamqn_make_bqnv_from_bitstring(ErlNifEnv*, ERL_NIF_TERM, BQNV*);
+bool beamqn_make_bqnv_from_bitstring(ErlNifEnv *env, ERL_NIF_TERM term, BQNV *bqnv) {
+    ErlNifBinary ebin;
+    if (!enif_inspect_binary(env, term, &ebin)) {
+        return false;
+    }
+    // https://stackoverflow.com/questions/14746889/casting-from-unsigned-into-signed-char-in-c/14746982#14746982
+    *bqnv = bqn_makeUTF8Str(ebin.size, (const char*)ebin.data);
+    return true;
+}
+
+bool beamqn_make_bqnv_from_float(ErlNifEnv*, ERL_NIF_TERM, BQNV*);
+bool beamqn_make_bqnv_from_float(ErlNifEnv *env, ERL_NIF_TERM term, BQNV *bqnv) {
+    double cval;
+    if (!enif_get_double(env, term, &cval)) {
+        return false;
+    }
+    *bqnv = bqn_makeF64(cval);
+    return true;
+}
+
+bool beamqn_make_bqnv_from_integer(ErlNifEnv*, ERL_NIF_TERM, BQNV*);
+bool beamqn_make_bqnv_from_integer(ErlNifEnv *env, ERL_NIF_TERM term, BQNV *bqnv) {
+    int64_t cval;
+    if (!enif_get_int64(env, term, &cval)) {
+        return false;
+    }
+    *bqnv = bqn_makeF64((double)cval);
+    return true;
+}
+
 bool beamqn_make_bqnv_terminal(ErlNifEnv*, ERL_NIF_TERM, BQNV*, ERL_NIF_TERM*);
-bool beamqn_make_bqnv_terminal(ErlNifEnv* env, ERL_NIF_TERM term, BQNV* bqnv, ERL_NIF_TERM *err) {
+bool beamqn_make_bqnv_terminal(ErlNifEnv *env, ERL_NIF_TERM term, BQNV *bqnv, ERL_NIF_TERM *err) {
     switch (enif_term_type(env, term)) {
         case ERL_NIF_TERM_TYPE_ATOM:
             *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_atom);
             return false;
             break;
         case ERL_NIF_TERM_TYPE_BITSTRING:
-            ErlNifBinary ebin;
-            if (!enif_inspect_binary(env, term, &ebin)) {
+            if (!beamqn_make_bqnv_from_bitstring(env, term, bqnv)) {
                 *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_bitstring);
                 return false;
             }
-            // https://stackoverflow.com/questions/14746889/casting-from-unsigned-into-signed-char-in-c/14746982#14746982
-            *bqnv = bqn_makeUTF8Str(ebin.size, (const char*)ebin.data);
-            return true;
+            else {
+                return true;
+            }
             break;
         case ERL_NIF_TERM_TYPE_FLOAT:
-            double f64_val;
-            if (!enif_get_double(env, term, &f64_val)) {
+            if (!beamqn_make_bqnv_from_float(env, term, bqnv)) {
                 *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_float);
                 return false;
             }
-            *bqnv = bqn_makeF64(f64_val);
-            return true;
+            else {
+                return true;
+            }
             break;
         case ERL_NIF_TERM_TYPE_FUN:
             *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_fun);
             return false;
             break;
         case ERL_NIF_TERM_TYPE_INTEGER:
-            int64_t i64_val;
-            if (!enif_get_int64(env, term, &i64_val)) {
+            if (!beamqn_make_bqnv_from_integer(env, term, bqnv)) {
                 *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_integer);
                 return false;
             }
-            *bqnv = bqn_makeF64((double)i64_val);
-            return true;
+            else {
+                return true;
+            }
             break;
         case ERL_NIF_TERM_TYPE_PID:
             *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_pid);
