@@ -26,7 +26,7 @@ defmodule BeamQN.MixProject do
     [
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
-      {:cbqn, git: "https://github.com/dzaima/CBQN.git", ref: "a6a0888", app: false, compile: compile_cbqn()}
+      {:cbqn, git: "https://github.com/dzaima/CBQN.git", ref: "4f898f3", app: false, compile: compile_cbqn()}
     ]
   end
 
@@ -54,9 +54,9 @@ defmodule BeamQN.MixProject do
   defp compile_cbqn do
     case :os.type() do
       {_family, os} when os in [:linux, :darwin, :solaris] ->
-        "make f='-DNO_MMAP' CATCH_ERRORS=1 FFI=0 static-lib"
+        "make f='-DNO_MMAP -DUSE_SETJMP' FFI=0 static-lib"
       {_family, os} when os in [:freebsd] ->
-        "gmake f='-DNO_MMAP' CATCH_ERRORS=1 FFI=0 static-lib"
+        "gmake f='-DNO_MMAP -DUSE_SETJMP' FFI=0 static-lib"
     end
   end
 

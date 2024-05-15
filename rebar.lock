@@ -1,4 +1,4 @@
 [{<<"cbqn">>,
   {raw,"https://github.com/dzaima/CBQN.git",
-       {mod_ref,git,{ref,"a6a088868cc3b27ae3979828740eb35f79ce11ac"},[]}},
+       {mod_ref,git,{ref,"4f898f38d22ebec96965f7293ed4e40bd24c152d"},[]}},
   0}].
