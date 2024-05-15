@@ -135,6 +135,24 @@ ERL_NIF_TERM beamqn_decode_f64(ErlNifEnv *env, size_t len, BQNV *bqnv) {
             return term;
 }
 
+ERL_NIF_TERM beamqn_decode_i8(ErlNifEnv*, size_t, BQNV*);
+ERL_NIF_TERM beamqn_decode_i8(ErlNifEnv *env, size_t len, BQNV *bqnv) {
+            ERL_NIF_TERM *ebuf;
+            int8_t *cbuf = enif_alloc(len * sizeof(int8_t));
+            bqn_readI8Arr(*bqnv, cbuf);
+
+            ebuf = enif_alloc(len * sizeof(ERL_NIF_TERM));
+            for (size_t i = 0; i < len; i++) {
+                ebuf[i] = enif_make_double(env, cbuf[i]);
+            }
+
+            ERL_NIF_TERM term = enif_make_list_from_array(env, ebuf, len);
+
+            enif_free(cbuf);
+            enif_free(ebuf);
+            return term;
+}
+
 static void beamqn_free_bqnv(ErlNifEnv* env, void* ptr) {
     BQNV *x = (BQNV*) ptr;
     // CBQN uses its own memory management system (see CBQN/src/opt/) and reads past the end
@@ -649,8 +667,8 @@ bool beamqn_read_bqnv_elt_terminal(ErlNifEnv *env, BQNElType elt_type, size_t le
             return true;
             break;
         case elt_i8:
-            *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_elt_i8);
-            return false;
+            *term = beamqn_decode_i8(env, len, bqnv);
+            return true;
             break;
         case elt_i16:
             *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_elt_i16);
