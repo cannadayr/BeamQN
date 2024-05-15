@@ -6,11 +6,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Maximum nesting allowing in `make` and `read`.
+#define BEAMQN_MAX_RECURSION 3
+
 ERL_NIF_TERM beamqn_atom_core_ok;
 ERL_NIF_TERM beamqn_atom_core_err;
 ERL_NIF_TERM beamqn_atom_opt_tsdiff;
 ERL_NIF_TERM beamqn_atom_err_badtype;
 ERL_NIF_TERM beamqn_atom_err_oom;
+ERL_NIF_TERM beamqn_atom_err_recursion_limit;
 ERL_NIF_TERM beamqn_atom_typ_elt_unk;
 ERL_NIF_TERM beamqn_atom_typ_elt_f64;
 ERL_NIF_TERM beamqn_atom_typ_elt_i8;
@@ -149,6 +153,7 @@ static int beamqn_init(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
     beamqn_atom_opt_tsdiff          = beamqn_make_atom(env, "tsdiff");
     beamqn_atom_err_badtype         = beamqn_make_atom(env, "badtype");
     beamqn_atom_err_oom             = beamqn_make_atom(env, "oom");
+    beamqn_atom_err_recursion_limit = beamqn_make_atom(env, "recursion_limit");
     beamqn_atom_typ_elt_unk         = beamqn_make_atom(env, "elt_unk");
     beamqn_atom_typ_elt_f64         = beamqn_make_atom(env, "elt_f64");
     beamqn_atom_typ_elt_i8          = beamqn_make_atom(env, "elt_i8");
@@ -213,7 +218,7 @@ static ERL_NIF_TERM beamqn_call(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
     int arg_arity;
     const ERL_NIF_TERM *arg_cur;
 
-    arg = argv[1]; // can be arity 1 or 2
+    arg = argv[1]; // arg 1 can be arity 1 or 2
 
     ErlNifTime ts0 = enif_monotonic_time(ERL_NIF_USEC);
 
@@ -469,8 +474,12 @@ bool beamqn_make_bqnv_terminal(ErlNifEnv* env, ERL_NIF_TERM term, BQNV* bqnv, ER
     }
 }
 
-bool beamqn_make_bqnv(ErlNifEnv*, ERL_NIF_TERM, BQNV*, ERL_NIF_TERM*);
-bool beamqn_make_bqnv(ErlNifEnv* env, ERL_NIF_TERM term, BQNV* bqnv, ERL_NIF_TERM *err) {
+bool beamqn_make_bqnv(ErlNifEnv*, ERL_NIF_TERM, BQNV*, ERL_NIF_TERM*, unsigned);
+bool beamqn_make_bqnv(ErlNifEnv* env, ERL_NIF_TERM term, BQNV* bqnv, ERL_NIF_TERM *err, unsigned depth) {
+    if (depth > BEAMQN_MAX_RECURSION) {
+        *err = beamqn_atom_err_recursion_limit;
+        return false;
+    }
     if (enif_is_map(env, term) || enif_is_tuple(env, term)) {
         // only allow lists as nonterminals.
         *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_nif_list);
@@ -495,7 +504,10 @@ bool beamqn_make_bqnv(ErlNifEnv* env, ERL_NIF_TERM term, BQNV* bqnv, ERL_NIF_TER
             ERL_NIF_TERM hd;
             for (int i = 0; enif_get_list_cell(env, term, &hd, &term); i++) {
                 // This is not tail call optimized, and vulnerable to stack overflows!
-                beamqn_make_bqnv(env, hd, &arr[i], err);
+                if (!beamqn_make_bqnv(env, hd, &arr[i], err, depth+1)) {
+                    // Assume err is properly set in child function call
+                    return false;
+                }
             }
             *bqnv = bqn_makeObjVec(len, arr);
         }
@@ -553,7 +565,7 @@ static ERL_NIF_TERM beamqn_make(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
     ERL_NIF_TERM err, resource;
 
     bqnv = enif_alloc_resource(BqnvResource, sizeof(BQNV));
-    if (!beamqn_make_bqnv(env, argv[0], bqnv, &err)) {
+    if (!beamqn_make_bqnv(env, argv[0], bqnv, &err, 0)) {
         return enif_raise_exception(env, err);
     }
     resource = enif_make_resource(env, bqnv);
@@ -641,8 +653,12 @@ bool beamqn_read_bqnv_elt_terminal(ErlNifEnv *env, BQNElType elt_type, size_t le
     }
 }
 
-bool beamqn_read_bqnv(ErlNifEnv*, BQNV*, ERL_NIF_TERM*, ERL_NIF_TERM*);
-bool beamqn_read_bqnv(ErlNifEnv* env, BQNV* bqnv, ERL_NIF_TERM *term, ERL_NIF_TERM *err) {
+bool beamqn_read_bqnv(ErlNifEnv*, BQNV*, ERL_NIF_TERM*, ERL_NIF_TERM*, unsigned);
+bool beamqn_read_bqnv(ErlNifEnv* env, BQNV* bqnv, ERL_NIF_TERM *term, ERL_NIF_TERM *err, unsigned depth) {
+    if (depth > BEAMQN_MAX_RECURSION) {
+        *err = beamqn_atom_err_recursion_limit;
+        return false;
+    }
     enum BQNV_TYPE type = bqn_type(*bqnv);
     if (type == BQN_NS) {
         // only allow arrays as nonterminals.
@@ -678,7 +694,10 @@ bool beamqn_read_bqnv(ErlNifEnv* env, BQNV* bqnv, ERL_NIF_TERM *term, ERL_NIF_TE
                 for (size_t i = 0; i < len; i++) {
                     BQNV elem = bqn_pick(*bqnv, i);
                     // This is not tail call optimized, and vulnerable to stack overflows!
-                    beamqn_read_bqnv(env, &elem, &ebuf[i], err);
+                    if (!beamqn_read_bqnv(env, &elem, &ebuf[i], err, depth+1)) {
+                        // Assume err is properly set in child function call
+                        return false;
+                    }
                 }
                 *term = enif_make_list_from_array(env, ebuf, len);
                 enif_free(ebuf);
@@ -739,7 +758,7 @@ static ERL_NIF_TERM beamqn_read(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
         return enif_make_badarg(env);
     }
 
-    if (!beamqn_read_bqnv(env, bqnv, &term, &err)) {
+    if (!beamqn_read_bqnv(env, bqnv, &term, &err, 0)) {
         return enif_raise_exception(env, err);
     }
 
