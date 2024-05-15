@@ -46,13 +46,13 @@ ErlNifResourceType *BqnvResource;
 static BQNV *beamqn_safe_eval;
 
 static ERL_NIF_TERM beamqn_make_atom(ErlNifEnv* env, const char* atom) {
-    ERL_NIF_TERM ret;
+    ERL_NIF_TERM term;
 
-    if(!enif_make_existing_atom(env, atom, &ret, ERL_NIF_LATIN1)) {
+    if(!enif_make_existing_atom(env, atom, &term, ERL_NIF_LATIN1)) {
         return enif_make_atom(env, atom);
     }
 
-    return ret;
+    return term;
 }
 
 bool beamqn_is_opt_list(ErlNifEnv*, ERL_NIF_TERM, unsigned*);
