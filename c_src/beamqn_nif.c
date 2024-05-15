@@ -604,6 +604,7 @@ bool beamqn_read_bqnv_elt_terminal(ErlNifEnv *env, BQNElType elt_type, size_t le
     switch (elt_type) {
         case elt_f64:
             if (!beamqn_decode_f64(env, len, bqnv, term)) {
+                *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_elt_f64);
                 return false;
             }
             else {
