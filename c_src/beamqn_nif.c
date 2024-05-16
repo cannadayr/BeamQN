@@ -457,7 +457,7 @@ bool beamqn_make_bqnv_from_float(ErlNifEnv *env, ERL_NIF_TERM term, BQNV *bqnv) 
 
 bool beamqn_make_bqnv_from_integer(ErlNifEnv*, ERL_NIF_TERM, BQNV*);
 bool beamqn_make_bqnv_from_integer(ErlNifEnv *env, ERL_NIF_TERM term, BQNV *bqnv) {
-    int64_t cval;
+    ErlNifSInt64 cval;
     if (!enif_get_int64(env, term, &cval)) {
         return false;
     }
