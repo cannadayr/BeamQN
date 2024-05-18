@@ -15,6 +15,16 @@ The risks of using this library include, but are not limited to:
 In order to rapidly identify bugs, it is recommended to develop BeamQN applications using a debug enabled Erlang runtime system.
 A general guide for building a debug enabled Erlang runtime system and the latest Rebar3 build tool is below.
 
+### Usage
+```
+Eshell V14.2.1 (press Ctrl+G to abort, type help(). for help)
+1> {ok, F} = beamqn:eval(<<"+"/utf8>>),
+   {ok, X} = beamqn:make([1,2,3]),
+   {ok, W} = beamqn:make([4,5,6]),
+   {ok, R} = beamqn:call(F,{X,W}),
+   beamqn:read(R).
+{ok,[5.0,7.0,9.0]}
+```
 ### Build (Development)
 
 1. Download and extract the latest Erlang/OTP release tarball from the [downloads page](https://www.erlang.org/downloads).
@@ -29,8 +39,10 @@ env PATH=$ERL_TOP:$PATH ./bootstrap
 8. Using the compiled runtime for development:
 
    #### Debug
-       $ env PATH=$ERL_TOP/bin:$PATH $REBAR_TOP/rebar3 compile
-       $ env PATH=$ERL_TOP/bin:$PATH cerl -debug +pc unicode -pa ebin -pa ./_build/default/lib/*/ebin
+   ```
+   env PATH=$ERL_TOP/bin:$PATH $REBAR_TOP/rebar3 compile
+   env PATH=$ERL_TOP/bin:$PATH cerl -debug +pc unicode -pa ebin -pa ./_build/default/lib/*/ebin
+   ```
 
 ### Installation (Erlang)
 
