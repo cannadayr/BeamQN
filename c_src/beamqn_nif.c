@@ -231,12 +231,11 @@ static ERL_NIF_TERM beamqn_call(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
     stat.count = 0;
     call_opt.tsdiff = false;
 
-    ERL_NIF_TERM arg, term;
-    BQNV *prog, *x, *w, *bqnv;
+    BQNV *prog, *x, *w;
     int arg_arity;
     const ERL_NIF_TERM *arg_cur;
 
-    arg = argv[1]; // arg 1 can be arity 1 or 2
+    ERL_NIF_TERM arg = argv[1]; // arg 1 can be arity 1 or 2
 
     ErlNifTime ts0 = enif_monotonic_time(ERL_NIF_USEC);
 
@@ -277,7 +276,7 @@ static ERL_NIF_TERM beamqn_call(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
     if (3 != bqn_type(*prog)) { // not a function
         return enif_make_badarg(env);
     }
-    bqnv = enif_alloc_resource(BqnvResource, sizeof(BQNV));
+    BQNV *bqnv = enif_alloc_resource(BqnvResource, sizeof(BQNV));
     if (enif_is_tuple(env,arg)) { // call2
         enif_get_tuple(env, arg, &arg_arity, &arg_cur);
         if (arg_arity != 2) {
@@ -297,7 +296,7 @@ static ERL_NIF_TERM beamqn_call(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
         }
         *bqnv = bqn_call1(*prog, *x);
     }
-    term = enif_make_resource(env, bqnv);
+    ERL_NIF_TERM term = enif_make_resource(env, bqnv);
     enif_release_resource(bqnv);
 
     if (call_opt.tsdiff) {
@@ -335,8 +334,6 @@ static ERL_NIF_TERM beamqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
     eval_opt.tsdiff = false;
 
     ErlNifBinary x;
-    BQNV *func;
-    BQNV prog, bqn_err;
     ERL_NIF_TERM term, err, atom;
 
     ErlNifTime ts0 = enif_monotonic_time(ERL_NIF_USEC);
@@ -376,14 +373,14 @@ static ERL_NIF_TERM beamqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
         return enif_make_badarg(env);
     }
 
-    prog = bqn_call1(*beamqn_safe_eval, bqn_makeUTF8Str(x.size, (const char*)x.data));
+    BQNV prog = bqn_call1(*beamqn_safe_eval, bqn_makeUTF8Str(x.size, (const char*)x.data));
 
     // There are dangers in casting to integers in C.
     // This seems safe since we are guaranteeing 0 or 1 returned from beamqn_safe_eval.
     // That may not be true with different compilers or compiler versions.
     // See https://www.cs.cmu.edu/~rbd/papers/cmj-float-to-int.html
     if (1 == (int)bqn_toF64(bqn_pick(prog,0))) {
-        bqn_err = bqn_pick(prog,1);
+        BQNV bqn_err = bqn_pick(prog,1);
         size_t len = bqn_bound(bqn_err);
         if (0 != bqn_type(bqn_err)) { // not an array
             return enif_make_badarg(env);
@@ -401,7 +398,7 @@ static ERL_NIF_TERM beamqn_eval(ErlNifEnv* env, int argc, const ERL_NIF_TERM arg
         }
     }
     else {
-        func = enif_alloc_resource(BqnvResource, sizeof(BQNV));
+        BQNV *func = enif_alloc_resource(BqnvResource, sizeof(BQNV));
         *func = bqn_pick(prog,1);
 
         if (3 != bqn_type(*func)) { // not a function
