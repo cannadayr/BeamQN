@@ -117,15 +117,22 @@ bool beamqn_decode_c8(ErlNifEnv *env, size_t len, BQNV *bqnv, ERL_NIF_TERM *term
     return true;
 }
 
-ERL_NIF_TERM beamqn_decode_f64(ErlNifEnv*, size_t, BQNV*);
-ERL_NIF_TERM beamqn_decode_f64(ErlNifEnv *env, size_t len, BQNV *bqnv) {
+typedef void (BeamqnReadArrFunc)(BQNV, void*);
+typedef ERL_NIF_TERM (BeamqnMakeTermFunc)(ErlNifEnv*, void*, size_t);
+
+ERL_NIF_TERM beamqn_make_double(ErlNifEnv*, void*, size_t);
+ERL_NIF_TERM beamqn_make_double(ErlNifEnv *env, void *cbuf, size_t i) {
+    return enif_make_double(env, ((double*)cbuf)[i]);
+}
+ERL_NIF_TERM beamqn_decode_f64(ErlNifEnv*, size_t, size_t, BeamqnReadArrFunc, BeamqnMakeTermFunc, BQNV*);
+ERL_NIF_TERM beamqn_decode_f64(ErlNifEnv *env, size_t elem_size, size_t len, BeamqnReadArrFunc read_func, BeamqnMakeTermFunc make_func, BQNV *bqnv) {
             ERL_NIF_TERM *ebuf;
-            double *cbuf = enif_alloc(len * sizeof(double));
-            bqn_readF64Arr(*bqnv, cbuf);
+            void *cbuf = enif_alloc(len * elem_size);
+            read_func(*bqnv, cbuf);
 
             ebuf = enif_alloc(len * sizeof(ERL_NIF_TERM));
             for (size_t i = 0; i < len; i++) {
-                ebuf[i] = enif_make_double(env, cbuf[i]);
+                ebuf[i] = make_func(env, cbuf, i);
             }
 
             ERL_NIF_TERM term = enif_make_list_from_array(env, ebuf, len);
@@ -660,7 +667,7 @@ bool beamqn_read_bqnv_elt_terminal(ErlNifEnv*, BQNElType, size_t, BQNV*, ERL_NIF
 bool beamqn_read_bqnv_elt_terminal(ErlNifEnv *env, BQNElType elt_type, size_t len, BQNV* bqnv, ERL_NIF_TERM *term, ERL_NIF_TERM *err) {
     switch (elt_type) {
         case elt_f64:
-            *term = beamqn_decode_f64(env, len, bqnv);
+            *term = beamqn_decode_f64(env, sizeof(double), len, (BeamqnReadArrFunc*) bqn_readF64Arr, (BeamqnMakeTermFunc*) beamqn_make_double, bqnv);
             return true;
             break;
         case elt_i8:
