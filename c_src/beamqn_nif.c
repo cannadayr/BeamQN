@@ -120,12 +120,28 @@ bool beamqn_decode_c8(ErlNifEnv *env, size_t len, BQNV *bqnv, ERL_NIF_TERM *term
 typedef void (BeamqnReadArrFunc)(BQNV, void*);
 typedef ERL_NIF_TERM (BeamqnMakeTermFunc)(ErlNifEnv*, void*, size_t);
 
-ERL_NIF_TERM beamqn_make_double(ErlNifEnv*, void*, size_t);
-ERL_NIF_TERM beamqn_make_double(ErlNifEnv *env, void *cbuf, size_t i) {
+ERL_NIF_TERM beamqn_make_f64(ErlNifEnv*, void*, size_t);
+ERL_NIF_TERM beamqn_make_f64(ErlNifEnv *env, void *cbuf, size_t i) {
     return enif_make_double(env, ((double*)cbuf)[i]);
 }
-ERL_NIF_TERM beamqn_decode_f64(ErlNifEnv*, size_t, size_t, BeamqnReadArrFunc, BeamqnMakeTermFunc, BQNV*);
-ERL_NIF_TERM beamqn_decode_f64(ErlNifEnv *env, size_t elem_size, size_t len, BeamqnReadArrFunc read_func, BeamqnMakeTermFunc make_func, BQNV *bqnv) {
+
+ERL_NIF_TERM beamqn_make_i8(ErlNifEnv*, void*, size_t);
+ERL_NIF_TERM beamqn_make_i8(ErlNifEnv *env, void *cbuf, size_t i) {
+    return enif_make_int(env, ((int8_t*)cbuf)[i]);
+}
+
+ERL_NIF_TERM beamqn_make_i16(ErlNifEnv*, void*, size_t);
+ERL_NIF_TERM beamqn_make_i16(ErlNifEnv *env, void *cbuf, size_t i) {
+    return enif_make_int(env, ((int16_t*)cbuf)[i]);
+}
+
+ERL_NIF_TERM beamqn_make_i32(ErlNifEnv*, void*, size_t);
+ERL_NIF_TERM beamqn_make_i32(ErlNifEnv *env, void *cbuf, size_t i) {
+    return enif_make_int(env, ((int32_t*)cbuf)[i]);
+}
+
+ERL_NIF_TERM beamqn_decode_arr(ErlNifEnv*, size_t, size_t, BeamqnReadArrFunc, BeamqnMakeTermFunc, BQNV*);
+ERL_NIF_TERM beamqn_decode_arr(ErlNifEnv *env, size_t elem_size, size_t len, BeamqnReadArrFunc read_func, BeamqnMakeTermFunc make_func, BQNV *bqnv) {
             ERL_NIF_TERM *ebuf;
             void *cbuf = enif_alloc(len * elem_size);
             read_func(*bqnv, cbuf);
@@ -133,24 +149,6 @@ ERL_NIF_TERM beamqn_decode_f64(ErlNifEnv *env, size_t elem_size, size_t len, Bea
             ebuf = enif_alloc(len * sizeof(ERL_NIF_TERM));
             for (size_t i = 0; i < len; i++) {
                 ebuf[i] = make_func(env, cbuf, i);
-            }
-
-            ERL_NIF_TERM term = enif_make_list_from_array(env, ebuf, len);
-
-            enif_free(cbuf);
-            enif_free(ebuf);
-            return term;
-}
-
-ERL_NIF_TERM beamqn_decode_i8(ErlNifEnv*, size_t, BQNV*);
-ERL_NIF_TERM beamqn_decode_i8(ErlNifEnv *env, size_t len, BQNV *bqnv) {
-            ERL_NIF_TERM *ebuf;
-            int8_t *cbuf = enif_alloc(len * sizeof(int8_t));
-            bqn_readI8Arr(*bqnv, cbuf);
-
-            ebuf = enif_alloc(len * sizeof(ERL_NIF_TERM));
-            for (size_t i = 0; i < len; i++) {
-                ebuf[i] = enif_make_double(env, cbuf[i]);
             }
 
             ERL_NIF_TERM term = enif_make_list_from_array(env, ebuf, len);
@@ -667,20 +665,20 @@ bool beamqn_read_bqnv_elt_terminal(ErlNifEnv*, BQNElType, size_t, BQNV*, ERL_NIF
 bool beamqn_read_bqnv_elt_terminal(ErlNifEnv *env, BQNElType elt_type, size_t len, BQNV* bqnv, ERL_NIF_TERM *term, ERL_NIF_TERM *err) {
     switch (elt_type) {
         case elt_f64:
-            *term = beamqn_decode_f64(env, sizeof(double), len, (BeamqnReadArrFunc*) bqn_readF64Arr, (BeamqnMakeTermFunc*) beamqn_make_double, bqnv);
+            *term = beamqn_decode_arr(env, sizeof(double), len, (BeamqnReadArrFunc*) bqn_readF64Arr, (BeamqnMakeTermFunc*) beamqn_make_f64, bqnv);
             return true;
             break;
         case elt_i8:
-            *term = beamqn_decode_i8(env, len, bqnv);
+            *term = beamqn_decode_arr(env, sizeof(int8_t), len, (BeamqnReadArrFunc*) bqn_readI8Arr, (BeamqnMakeTermFunc*) beamqn_make_i8, bqnv);
             return true;
             break;
         case elt_i16:
-            *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_elt_i16);
-            return false;
+            *term = beamqn_decode_arr(env, sizeof(int16_t), len, (BeamqnReadArrFunc*) bqn_readI16Arr, (BeamqnMakeTermFunc*) beamqn_make_i16, bqnv);
+            return true;
             break;
         case elt_i32:
-            *err = enif_make_tuple2(env, beamqn_atom_err_badtype, beamqn_atom_typ_elt_i32);
-            return false;
+            *term = beamqn_decode_arr(env, sizeof(int32_t), len, (BeamqnReadArrFunc*) bqn_readI32Arr, (BeamqnMakeTermFunc*) beamqn_make_i32, bqnv);
+            return true;
             break;
         case elt_c8:
             if (!beamqn_decode_c8(env, len, bqnv, term, err)) {
