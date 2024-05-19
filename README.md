@@ -23,7 +23,7 @@ Eshell V14.2.1 (press Ctrl+G to abort, type help(). for help)
    {ok, W} = beamqn:make([4,5,6]),
    {ok, R} = beamqn:call(F,{X,W}),
    beamqn:read(R).
-{ok,[5.0,7.0,9.0]}
+{ok,[5,7,9]}
 ```
 ### Build (Development)
 
